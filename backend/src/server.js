@@ -7,7 +7,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-
+const deliveryPersonRoutes = require("./routes/deliveryPersonRoutes");
 
 
 
@@ -20,7 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/orders", orderRoutes);
-
+app.use("/api/admin/delivery-persons", deliveryPersonRoutes);
 
 
 

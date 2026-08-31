@@ -14,6 +14,8 @@ const {
   getOrderById,
   updateOrder,
   confirmOrderByAdmin,
+  updateOrderStatus,
+  handleCancellationRequest,
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -56,7 +58,7 @@ router.get("/orders", protectAdmin, getAllOrders);
 // Get one order
 router.get("/orders/:id", protectAdmin, getOrderById);
 
-// Update order
+// Update order details
 router.put("/orders/:id", protectAdmin, updateOrder);
 
 // Admin final confirmation
@@ -66,6 +68,18 @@ router.post(
   confirmOrderByAdmin
 );
 
+// Update order status
+router.patch(
+  "/orders/:id/status",
+  protectAdmin,
+  updateOrderStatus
+);
+
+router.patch(
+  "/orders/:id/cancellation",
+  protectAdmin,
+  handleCancellationRequest
+);
 // ==========================================
 // EXPORT
 // ==========================================
