@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 
+// ==========================================
+// ORDER ITEM SCHEMA
+// ==========================================
+
 const orderItemSchema = new mongoose.Schema(
   {
     recipe: {
@@ -43,8 +47,14 @@ const orderItemSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { _id: false }
+  {
+    _id: false,
+  }
 );
+
+// ==========================================
+// STATUS HISTORY SCHEMA
+// ==========================================
 
 const statusHistorySchema = new mongoose.Schema(
   {
@@ -70,17 +80,31 @@ const statusHistorySchema = new mongoose.Schema(
       default: "",
     },
   },
-  { _id: false }
+  {
+    _id: false,
+  }
 );
+
+// ==========================================
+// ORDER SCHEMA
+// ==========================================
 
 const orderSchema = new mongoose.Schema(
   {
+    // ==========================================
+    // CUSTOMER-FRIENDLY ORDER ID
+    // ==========================================
+
     orderId: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
+
+    // ==========================================
+    // CUSTOMER
+    // ==========================================
 
     customer: {
       name: {
@@ -102,6 +126,10 @@ const orderSchema = new mongoose.Schema(
         default: "",
       },
     },
+
+    // ==========================================
+    // DELIVERY DETAILS
+    // ==========================================
 
     deliveryAddress: {
       type: String,
@@ -132,14 +160,26 @@ const orderSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ==========================================
+    // ORDER ITEMS
+    // ==========================================
+
     items: {
       type: [orderItemSchema],
       required: true,
+
       validate: {
-        validator: (items) => items.length > 0,
+        validator: (items) => {
+          return Array.isArray(items) && items.length > 0;
+        },
+
         message: "Order must contain at least one item",
       },
     },
+
+    // ==========================================
+    // PRICE DETAILS
+    // ==========================================
 
     foodTotal: {
       type: Number,
@@ -159,14 +199,23 @@ const orderSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // ==========================================
+    // DELIVERY PERSON
+    // ==========================================
+
     deliveryPerson: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "DeliveryPerson",
       default: null,
     },
 
+    // ==========================================
+    // ORDER STATUS
+    // ==========================================
+
     status: {
       type: String,
+
       enum: [
         "PENDING_CONFIRMATION",
         "CUSTOMER_CONFIRMED",
@@ -177,8 +226,13 @@ const orderSchema = new mongoose.Schema(
         "DELIVERED",
         "CANCELLED",
       ],
+
       default: "PENDING_CONFIRMATION",
     },
+
+    // ==========================================
+    // CUSTOMER CONFIRMATION
+    // ==========================================
 
     customerConfirmed: {
       type: Boolean,
@@ -190,6 +244,10 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
 
+    // ==========================================
+    // ADMIN CONFIRMATION
+    // ==========================================
+
     adminConfirmed: {
       type: Boolean,
       default: false,
@@ -199,6 +257,10 @@ const orderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // ==========================================
+    // CHANGE REQUEST
+    // ==========================================
 
     changeRequested: {
       type: Boolean,
@@ -211,6 +273,10 @@ const orderSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ==========================================
+    // CANCELLATION REQUEST
+    // ==========================================
+
     cancellationRequested: {
       type: Boolean,
       default: false,
@@ -222,10 +288,18 @@ const orderSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ==========================================
+    // STATUS HISTORY
+    // ==========================================
+
     statusHistory: {
       type: [statusHistorySchema],
       default: [],
     },
+
+    // ==========================================
+    // CUSTOMER TRACKING TOKEN
+    // ==========================================
 
     trackingToken: {
       type: String,
@@ -233,6 +307,10 @@ const orderSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+
+    // ==========================================
+    // CUSTOMER CONFIRMATION TOKEN
+    // ==========================================
 
     confirmationToken: {
       type: String,
@@ -249,10 +327,19 @@ const orderSchema = new mongoose.Schema(
       default: false,
     },
   },
+
+  // ==========================================
+  // AUTOMATIC CREATED / UPDATED DATES
+  // ==========================================
+
   {
     timestamps: true,
   }
 );
+
+// ==========================================
+// MODEL
+// ==========================================
 
 const Order = mongoose.model("Order", orderSchema);
 

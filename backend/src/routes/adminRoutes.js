@@ -37,29 +37,57 @@ router.get("/test", protectAdmin, (req, res) => {
 // ==========================================
 
 // Create recipe
-router.post("/recipes", protectAdmin, createRecipe);
+router.post(
+  "/recipes",
+  protectAdmin,
+  createRecipe
+);
 
 // Get all recipes
-router.get("/recipes", protectAdmin, getAllRecipesAdmin);
+router.get(
+  "/recipes",
+  protectAdmin,
+  getAllRecipesAdmin
+);
 
 // Update recipe
-router.put("/recipes/:id", protectAdmin, updateRecipe);
+router.put(
+  "/recipes/:id",
+  protectAdmin,
+  updateRecipe
+);
 
 // Delete recipe
-router.delete("/recipes/:id", protectAdmin, deleteRecipe);
+router.delete(
+  "/recipes/:id",
+  protectAdmin,
+  deleteRecipe
+);
 
 // ==========================================
 // ORDER MANAGEMENT
 // ==========================================
 
 // Get all orders
-router.get("/orders", protectAdmin, getAllOrders);
+router.get(
+  "/orders",
+  protectAdmin,
+  getAllOrders
+);
 
 // Get one order
-router.get("/orders/:id", protectAdmin, getOrderById);
+router.get(
+  "/orders/:id",
+  protectAdmin,
+  getOrderById
+);
 
 // Update order details
-router.put("/orders/:id", protectAdmin, updateOrder);
+router.put(
+  "/orders/:id",
+  protectAdmin,
+  updateOrder
+);
 
 // Admin final confirmation
 router.post(
@@ -75,11 +103,13 @@ router.patch(
   updateOrderStatus
 );
 
+// Handle cancellation request
 router.patch(
   "/orders/:id/cancellation",
   protectAdmin,
   handleCancellationRequest
 );
+
 // ==========================================
 // EXPORT
 // ==========================================
