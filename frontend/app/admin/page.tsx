@@ -67,7 +67,7 @@ export default function AdminPage() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/recipes/admin`, {
+      const response = await fetch(`${API_URL}/admin/recipes`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -177,8 +177,8 @@ export default function AdminPage() {
 
       const response = await fetch(
         isEditing
-          ? `${API_URL}/recipes/admin/${editingId}`
-          : `${API_URL}/recipes/admin`,
+          ? `${API_URL}/admin/recipes/${editingId}`
+          : `${API_URL}/admin/recipes`,
         {
           method: isEditing ? "PUT" : "POST",
           headers: {
@@ -277,7 +277,7 @@ export default function AdminPage() {
 
     try {
       const response = await fetch(
-        `${API_URL}/recipes/admin/${recipe._id}`,
+        `${API_URL}/admin/recipes/${recipe._id}`,
         {
           method: "DELETE",
           headers: {
@@ -339,7 +339,7 @@ export default function AdminPage() {
 
     try {
       const response = await fetch(
-        `${API_URL}/recipes/admin/${recipe._id}`,
+        `${API_URL}/admin/recipes/${recipe._id}`,
         {
           method: "PUT",
           headers: {
@@ -414,6 +414,14 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/admin/orders")}
+              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+            >
+              Orders
+            </button>
+
             <button
               type="button"
               onClick={logout}

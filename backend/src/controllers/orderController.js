@@ -242,6 +242,7 @@ const createOrder = async (req, res) => {
         foodTotal: order.foodTotal,
         grandTotal: order.grandTotal,
         trackingToken: order.trackingToken,
+        confirmationToken: order.confirmationToken,
       },
     });
   } catch (error) {
@@ -636,6 +637,8 @@ const updateOrder = async (req, res) => {
     order.adminConfirmedAt =
       null;
 
+    // Generate a NEW confirmation token
+    // whenever admin changes order details.
     order.confirmationToken =
       generateToken();
 
@@ -706,6 +709,9 @@ const confirmOrderByCustomer = async (
       });
     }
 
+    // IMPORTANT:
+    // Customer confirmation MUST use
+    // confirmationToken, not trackingToken.
     const order =
       await Order.findOne({
         confirmationToken: token,
@@ -760,6 +766,7 @@ const confirmOrderByCustomer = async (
     order.confirmationTokenUsed =
       true;
 
+    // Clear confirmation token after use.
     order.confirmationToken =
       null;
 
@@ -782,23 +789,44 @@ const confirmOrderByCustomer = async (
 
     return res.status(200).json({
       success: true,
+
       message:
         "Order confirmed by customer. Waiting for admin final confirmation.",
+
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         customerConfirmed:
           order.customerConfirmed,
+
+        customerConfirmedAt:
+          order.customerConfirmedAt,
+
         adminConfirmed:
           order.adminConfirmed,
+
         foodTotal:
           order.foodTotal,
+
         deliveryCharge:
           order.deliveryCharge,
+
         grandTotal:
           order.grandTotal,
+
+        // Keep tracking token so the customer
+        // can continue using change/cancellation.
+        trackingToken:
+          order.trackingToken,
+
+        // Confirmation token is intentionally
+        // null after successful use.
+        confirmationToken:
+          order.confirmationToken,
       },
     });
   } catch (error) {
@@ -897,10 +925,15 @@ const requestOrderChange = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         changeRequested:
           order.changeRequested,
+
+        trackingToken:
+          order.trackingToken,
       },
     });
   } catch (error) {
@@ -1013,18 +1046,27 @@ const confirmOrderByAdmin = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         customerConfirmed:
           order.customerConfirmed,
+
         adminConfirmed:
           order.adminConfirmed,
+
         foodTotal:
           order.foodTotal,
+
         deliveryCharge:
           order.deliveryCharge,
+
         grandTotal:
           order.grandTotal,
+
+        trackingToken:
+          order.trackingToken,
       },
     });
   } catch (error) {
@@ -1176,18 +1218,27 @@ const updateOrderStatus = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         customerConfirmed:
           order.customerConfirmed,
+
         adminConfirmed:
           order.adminConfirmed,
+
         foodTotal:
           order.foodTotal,
+
         deliveryCharge:
           order.deliveryCharge,
+
         grandTotal:
           order.grandTotal,
+
+        trackingToken:
+          order.trackingToken,
       },
     });
   } catch (error) {
@@ -1255,6 +1306,12 @@ const trackOrderByToken = async (
         customer: {
           name:
             order.customer.name,
+
+          phone:
+            order.customer.phone,
+
+          email:
+            order.customer.email,
         },
 
         items:
@@ -1272,6 +1329,9 @@ const trackOrderByToken = async (
         deliveryAddress:
           order.deliveryAddress,
 
+        mapPin:
+          order.mapPin,
+
         requestedDeliveryDate:
           order.requestedDeliveryDate,
 
@@ -1287,8 +1347,26 @@ const trackOrderByToken = async (
         customerConfirmed:
           order.customerConfirmed,
 
+        customerConfirmedAt:
+          order.customerConfirmedAt,
+
         adminConfirmed:
           order.adminConfirmed,
+
+        adminConfirmedAt:
+          order.adminConfirmedAt,
+
+        changeRequested:
+          order.changeRequested,
+
+        changeRequestMessage:
+          order.changeRequestMessage,
+
+        cancellationRequested:
+          order.cancellationRequested,
+
+        cancellationRequestMessage:
+          order.cancellationRequestMessage,
 
         statusHistory:
           order.statusHistory,
@@ -1298,12 +1376,23 @@ const trackOrderByToken = async (
             ? {
                 name:
                   order.deliveryPerson.name,
+
                 phone:
                   order.deliveryPerson.phone,
+
                 whatsapp:
                   order.deliveryPerson.whatsapp,
               }
             : null,
+
+        trackingToken:
+          order.trackingToken,
+
+        // IMPORTANT:
+        // Used by the existing customer
+        // confirmation button.
+        confirmationToken:
+          order.confirmationToken,
 
         createdAt:
           order.createdAt,
@@ -1355,6 +1444,7 @@ const trackOrderByOrderIdAndPhone =
         await Order.findOne({
           orderId:
             cleanOrderId,
+
           "customer.phone":
             cleanPhone,
         })
@@ -1382,8 +1472,10 @@ const trackOrderByOrderIdAndPhone =
           ? {
               name:
                 order.deliveryPerson.name,
+
               phone:
                 order.deliveryPerson.phone,
+
               whatsapp:
                 order.deliveryPerson.whatsapp,
             }
@@ -1399,6 +1491,12 @@ const trackOrderByOrderIdAndPhone =
           customer: {
             name:
               order.customer.name,
+
+            phone:
+              order.customer.phone,
+
+            email:
+              order.customer.email,
           },
 
           items:
@@ -1416,6 +1514,9 @@ const trackOrderByOrderIdAndPhone =
           deliveryAddress:
             order.deliveryAddress,
 
+          mapPin:
+            order.mapPin,
+
           requestedDeliveryDate:
             order.requestedDeliveryDate,
 
@@ -1431,13 +1532,40 @@ const trackOrderByOrderIdAndPhone =
           customerConfirmed:
             order.customerConfirmed,
 
+          customerConfirmedAt:
+            order.customerConfirmedAt,
+
           adminConfirmed:
             order.adminConfirmed,
+
+          adminConfirmedAt:
+            order.adminConfirmedAt,
+
+          changeRequested:
+            order.changeRequested,
+
+          changeRequestMessage:
+            order.changeRequestMessage,
+
+          cancellationRequested:
+            order.cancellationRequested,
+
+          cancellationRequestMessage:
+            order.cancellationRequestMessage,
 
           statusHistory:
             order.statusHistory,
 
           deliveryPerson,
+
+          trackingToken:
+            order.trackingToken,
+
+          // IMPORTANT:
+          // Your customer page needs this
+          // for the Confirm Order button.
+          confirmationToken:
+            order.confirmationToken,
 
           createdAt:
             order.createdAt,
@@ -1546,8 +1674,10 @@ const requestOrderCancellation =
       order.statusHistory.push({
         status:
           order.status,
+
         changedBy:
           "customer",
+
         note:
           `Customer requested cancellation: ${message.trim()}`,
       });
@@ -1556,15 +1686,22 @@ const requestOrderCancellation =
 
       return res.status(200).json({
         success: true,
+
         message:
           "Cancellation request sent to Sparsha Kitchen. The admin will review your request.",
+
         order: {
           orderId:
             order.orderId,
+
           status:
             order.status,
+
           cancellationRequested:
             order.cancellationRequested,
+
+          trackingToken:
+            order.trackingToken,
         },
       });
     } catch (error) {
@@ -1661,8 +1798,10 @@ const handleCancellationRequest =
         order.statusHistory.push({
           status:
             "CANCELLED",
+
           changedBy:
             "admin",
+
           note:
             note?.trim() ||
             "Admin approved the customer's cancellation request",
@@ -1672,13 +1811,17 @@ const handleCancellationRequest =
 
         return res.status(200).json({
           success: true,
+
           message:
             "Cancellation approved. Order has been cancelled.",
+
           order: {
             orderId:
               order.orderId,
+
             status:
               order.status,
+
             cancellationRequested:
               order.cancellationRequested,
           },
@@ -1698,8 +1841,10 @@ const handleCancellationRequest =
       order.statusHistory.push({
         status:
           order.status,
+
         changedBy:
           "admin",
+
         note:
           note?.trim() ||
           "Admin rejected the customer's cancellation request",
@@ -1709,13 +1854,17 @@ const handleCancellationRequest =
 
       return res.status(200).json({
         success: true,
+
         message:
           "Cancellation request rejected. Order will continue.",
+
         order: {
           orderId:
             order.orderId,
+
           status:
             order.status,
+
           cancellationRequested:
             order.cancellationRequested,
         },
@@ -1739,15 +1888,26 @@ const handleCancellationRequest =
 
 module.exports = {
   createOrder,
+
   getAllOrders,
+
   getOrderById,
+
   updateOrder,
+
   confirmOrderByCustomer,
+
   requestOrderChange,
+
   confirmOrderByAdmin,
+
   updateOrderStatus,
+
   trackOrderByToken,
+
   trackOrderByOrderIdAndPhone,
+
   requestOrderCancellation,
+
   handleCancellationRequest,
 };

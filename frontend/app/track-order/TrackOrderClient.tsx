@@ -70,6 +70,10 @@ type Order = {
 
   trackingToken?: string;
 
+  // IMPORTANT:
+  // Used only for customer confirmation.
+  confirmationToken?: string | null;
+
   createdAt?: string;
   updatedAt?: string;
 };
@@ -165,7 +169,10 @@ const formatDateTime = (date?: string) => {
 };
 
 const getStatusLabel = (status: string) => {
-  return statusLabels[status] || status.replaceAll("_", " ");
+  return (
+    statusLabels[status] ||
+    status.replaceAll("_", " ")
+  );
 };
 
 const getStatusIndex = (status: string) => {
@@ -179,31 +186,38 @@ const getStatusIndex = (status: string) => {
 export default function TrackOrderClient() {
   const searchParams = useSearchParams();
 
-  /*
-   * Initialize Order ID directly from the URL.
-   *
-   * This avoids using useEffect + setState,
-   * which was causing the ESLint error.
-   */
+  // ==========================================
+  // STATE
+  // ==========================================
+
   const [orderId, setOrderId] = useState(
     () => searchParams.get("orderId") || ""
   );
 
   const [phone, setPhone] = useState("");
 
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] =
+    useState<Order | null>(null);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(false);
 
-  const [confirming, setConfirming] = useState(false);
+  const [error, setError] =
+    useState("");
 
-  const [changeMessage, setChangeMessage] = useState("");
+  const [confirming, setConfirming] =
+    useState(false);
+
+  const [changeMessage, setChangeMessage] =
+    useState("");
+
   const [requestingChange, setRequestingChange] =
     useState(false);
 
-  const [cancellationMessage, setCancellationMessage] =
-    useState("");
+  const [
+    cancellationMessage,
+    setCancellationMessage,
+  ] = useState("");
 
   const [
     requestingCancellation,
@@ -225,11 +239,16 @@ export default function TrackOrderClient() {
       setActionMessage("");
       setOrder(null);
 
-      const trimmedOrderId = orderId.trim();
-      const trimmedPhone = phone.trim();
+      const trimmedOrderId =
+        orderId.trim();
+
+      const trimmedPhone =
+        phone.trim();
 
       if (!trimmedOrderId) {
-        setError("Please enter your Order ID.");
+        setError(
+          "Please enter your Order ID."
+        );
         return;
       }
 
@@ -259,7 +278,10 @@ export default function TrackOrderClient() {
         const data: OrderResponse =
           await response.json();
 
-        if (!response.ok || !data.success) {
+        if (
+          !response.ok ||
+          !data.success
+        ) {
           throw new Error(
             data.message ||
               "Unable to find the order."
@@ -296,9 +318,12 @@ export default function TrackOrderClient() {
   // ==========================================
 
   const handleConfirmOrder = async () => {
-    if (!order?.trackingToken) {
+    // IMPORTANT:
+    // Customer confirmation uses confirmationToken.
+    // DO NOT use trackingToken here.
+    if (!order?.confirmationToken) {
       setError(
-        "Confirmation token is not available for this order."
+        "Confirmation token is not available for this order. Please refresh the order and try again."
       );
       return;
     }
@@ -309,7 +334,7 @@ export default function TrackOrderClient() {
       setActionMessage("");
 
       const response = await fetch(
-        `${API_URL}/orders/confirm/${order.trackingToken}`,
+        `${API_URL}/orders/confirm/${order.confirmationToken}`,
         {
           method: "POST",
           headers: {
@@ -321,7 +346,10 @@ export default function TrackOrderClient() {
       const data: OrderResponse =
         await response.json();
 
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         throw new Error(
           data.message ||
             "Unable to confirm the order."
@@ -333,8 +361,45 @@ export default function TrackOrderClient() {
           "Order confirmed successfully."
       );
 
+      // IMPORTANT:
+      // Backend returns only part of the order after
+      // confirmation. Merge it with the existing order
+      // so customer/details/items do not disappear.
       if (data.order) {
-        setOrder(data.order);
+        setOrder((previousOrder) => {
+          if (!previousOrder) {
+            return data.order || null;
+          }
+
+          return {
+            ...previousOrder,
+            ...data.order,
+
+            customer:
+              data.order.customer ||
+              previousOrder.customer,
+
+            items:
+              data.order.items ||
+              previousOrder.items,
+
+            deliveryPerson:
+              data.order.deliveryPerson ??
+              previousOrder.deliveryPerson,
+
+            statusHistory:
+              data.order.statusHistory ||
+              previousOrder.statusHistory,
+
+            trackingToken:
+              data.order.trackingToken ||
+              previousOrder.trackingToken,
+
+            confirmationToken:
+              data.order.confirmationToken ??
+              null,
+          };
+        });
       } else {
         await fetchOrder();
       }
@@ -390,7 +455,8 @@ export default function TrackOrderClient() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: changeMessage.trim(),
+            message:
+              changeMessage.trim(),
           }),
         }
       );
@@ -398,7 +464,10 @@ export default function TrackOrderClient() {
       const data: OrderResponse =
         await response.json();
 
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         throw new Error(
           data.message ||
             "Unable to submit the change request."
@@ -413,7 +482,10 @@ export default function TrackOrderClient() {
       setChangeMessage("");
 
       if (data.order) {
-        setOrder(data.order);
+        setOrder((previousOrder) => ({
+          ...previousOrder!,
+          ...data.order,
+        }));
       } else {
         await fetchOrder();
       }
@@ -478,7 +550,10 @@ export default function TrackOrderClient() {
       const data: OrderResponse =
         await response.json();
 
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         throw new Error(
           data.message ||
             "Unable to submit the cancellation request."
@@ -493,7 +568,10 @@ export default function TrackOrderClient() {
       setCancellationMessage("");
 
       if (data.order) {
-        setOrder(data.order);
+        setOrder((previousOrder) => ({
+          ...previousOrder!,
+          ...data.order,
+        }));
       } else {
         await fetchOrder();
       }
@@ -522,8 +600,10 @@ export default function TrackOrderClient() {
     : -1;
 
   const canConfirm =
-    order?.status === "PENDING_CONFIRMATION" &&
-    !order.customerConfirmed;
+    order?.status ===
+      "PENDING_CONFIRMATION" &&
+    !order.customerConfirmed &&
+    !!order.confirmationToken;
 
   const canRequestChange =
     !!order &&
@@ -545,6 +625,7 @@ export default function TrackOrderClient() {
   return (
     <main className="min-h-screen bg-orange-50 text-zinc-900">
       {/* HEADER */}
+
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
           <Link
@@ -594,6 +675,7 @@ export default function TrackOrderClient() {
       </header>
 
       {/* PAGE */}
+
       <section className="mx-auto max-w-5xl px-6 py-14 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="font-semibold uppercase tracking-wide text-orange-600">
@@ -605,12 +687,14 @@ export default function TrackOrderClient() {
           </h1>
 
           <p className="mt-5 text-lg leading-8 text-zinc-600">
-            Enter your Order ID and phone number to
-            view the latest status of your order.
+            Enter your Order ID and phone
+            number to view the latest status
+            of your order.
           </p>
         </div>
 
         {/* SEARCH FORM */}
+
         <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
           <form
             onSubmit={fetchOrder}
@@ -629,7 +713,9 @@ export default function TrackOrderClient() {
                 type="text"
                 value={orderId}
                 onChange={(event) =>
-                  setOrderId(event.target.value)
+                  setOrderId(
+                    event.target.value
+                  )
                 }
                 placeholder="Example: SK-20260831-1234"
                 autoComplete="off"
@@ -650,7 +736,9 @@ export default function TrackOrderClient() {
                 type="tel"
                 value={phone}
                 onChange={(event) =>
-                  setPhone(event.target.value)
+                  setPhone(
+                    event.target.value
+                  )
                 }
                 placeholder="Phone number used for the order"
                 autoComplete="tel"
@@ -683,9 +771,11 @@ export default function TrackOrderClient() {
         </div>
 
         {/* ORDER DETAILS */}
+
         {order && (
           <div className="mt-10 space-y-7">
             {/* ORDER HEADER */}
+
             <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -699,12 +789,16 @@ export default function TrackOrderClient() {
 
                   <p className="mt-2 text-sm text-zinc-500">
                     Placed{" "}
-                    {formatDateTime(order.createdAt)}
+                    {formatDateTime(
+                      order.createdAt
+                    )}
                   </p>
                 </div>
 
                 <div className="rounded-full bg-orange-100 px-4 py-2 text-center text-sm font-bold text-orange-700">
-                  {getStatusLabel(order.status)}
+                  {getStatusLabel(
+                    order.status
+                  )}
                 </div>
               </div>
 
@@ -719,6 +813,7 @@ export default function TrackOrderClient() {
             </div>
 
             {/* STATUS TIMELINE */}
+
             <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
               <h2 className="text-2xl font-bold">
                 Order Progress
@@ -728,7 +823,8 @@ export default function TrackOrderClient() {
                 {statusSteps.map(
                   (status, index) => {
                     const isCurrent =
-                      order.status === status ||
+                      order.status ===
+                        status ||
                       (order.status ===
                         "CUSTOMER_CONFIRMED" &&
                         status ===
@@ -737,7 +833,8 @@ export default function TrackOrderClient() {
                     const isCompleted =
                       currentStatusIndex >=
                         index &&
-                      currentStatusIndex >= 0;
+                      currentStatusIndex >=
+                        0;
 
                     const historyEntry =
                       order.statusHistory?.find(
@@ -823,7 +920,8 @@ export default function TrackOrderClient() {
                       </p>
 
                       <p className="mt-1 text-sm text-zinc-500">
-                        This order is no longer active.
+                        This order is no
+                        longer active.
                       </p>
                     </div>
                   </div>
@@ -832,6 +930,7 @@ export default function TrackOrderClient() {
             </div>
 
             {/* CUSTOMER + DELIVERY */}
+
             <div className="grid gap-7 lg:grid-cols-2">
               <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
                 <h2 className="text-xl font-bold">
@@ -868,7 +967,10 @@ export default function TrackOrderClient() {
                       </p>
 
                       <p className="mt-1 break-all font-semibold">
-                        {order.customer.email}
+                        {
+                          order.customer
+                            .email
+                        }
                       </p>
                     </div>
                   )}
@@ -930,6 +1032,7 @@ export default function TrackOrderClient() {
             </div>
 
             {/* ORDER ITEMS */}
+
             <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
               <h2 className="text-2xl font-bold">
                 Order Items
@@ -975,7 +1078,9 @@ export default function TrackOrderClient() {
 
               <div className="mt-5 border-t border-zinc-200 pt-5">
                 <div className="flex justify-between text-sm text-zinc-600">
-                  <span>Food Total</span>
+                  <span>
+                    Food Total
+                  </span>
 
                   <span>
                     ₹
@@ -993,7 +1098,8 @@ export default function TrackOrderClient() {
                   <span>
                     ₹
                     {Number(
-                      order.deliveryCharge || 0
+                      order.deliveryCharge ||
+                        0
                     ).toFixed(2)}
                   </span>
                 </div>
@@ -1014,6 +1120,7 @@ export default function TrackOrderClient() {
             </div>
 
             {/* DELIVERY PERSON */}
+
             {order.deliveryPerson && (
               <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
                 <h2 className="text-xl font-bold">
@@ -1027,7 +1134,8 @@ export default function TrackOrderClient() {
                     </p>
 
                     <p className="mt-1 font-semibold">
-                      {order.deliveryPerson.name ||
+                      {order.deliveryPerson
+                        .name ||
                         "Not available"}
                     </p>
                   </div>
@@ -1038,7 +1146,8 @@ export default function TrackOrderClient() {
                     </p>
 
                     <p className="mt-1 font-semibold">
-                      {order.deliveryPerson.phone ||
+                      {order.deliveryPerson
+                        .phone ||
                         "Not available"}
                     </p>
                   </div>
@@ -1047,6 +1156,7 @@ export default function TrackOrderClient() {
             )}
 
             {/* CONFIRM ORDER */}
+
             {canConfirm && (
               <div className="rounded-3xl border border-green-200 bg-green-50 p-7 shadow-sm">
                 <h2 className="text-xl font-bold text-green-800">
@@ -1054,13 +1164,15 @@ export default function TrackOrderClient() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-green-700">
-                  Please confirm that the order
-                  details are correct.
+                  Please confirm that the
+                  order details are correct.
                 </p>
 
                 <button
                   type="button"
-                  onClick={handleConfirmOrder}
+                  onClick={
+                    handleConfirmOrder
+                  }
                   disabled={confirming}
                   className="mt-5 rounded-full bg-green-600 px-6 py-3 font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -1072,10 +1184,12 @@ export default function TrackOrderClient() {
             )}
 
             {/* CUSTOMER CONFIRMED */}
+
             {order.customerConfirmed && (
               <div className="rounded-3xl border border-green-200 bg-green-50 p-7">
                 <p className="font-bold text-green-800">
-                  ✓ You have confirmed this order.
+                  ✓ You have confirmed this
+                  order.
                 </p>
 
                 {order.customerConfirmedAt && (
@@ -1090,6 +1204,7 @@ export default function TrackOrderClient() {
             )}
 
             {/* CHANGE REQUEST */}
+
             {canRequestChange && (
               <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
                 <h2 className="text-xl font-bold">
@@ -1097,19 +1212,23 @@ export default function TrackOrderClient() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  Need to change something? Send
-                  Sparsha Kitchen a message.
+                  Need to change something?
+                  Send Sparsha Kitchen a
+                  message.
                 </p>
 
                 {order.changeRequested && (
                   <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm">
                     <p className="font-semibold text-orange-700">
-                      Change request already submitted.
+                      Change request already
+                      submitted.
                     </p>
 
                     {order.changeRequestMessage && (
                       <p className="mt-1 text-zinc-600">
-                        {order.changeRequestMessage}
+                        {
+                          order.changeRequestMessage
+                        }
                       </p>
                     )}
                   </div>
@@ -1117,7 +1236,9 @@ export default function TrackOrderClient() {
 
                 {!order.changeRequested && (
                   <form
-                    onSubmit={handleChangeRequest}
+                    onSubmit={
+                      handleChangeRequest
+                    }
                     className="mt-5"
                   >
                     <textarea
@@ -1134,7 +1255,9 @@ export default function TrackOrderClient() {
 
                     <button
                       type="submit"
-                      disabled={requestingChange}
+                      disabled={
+                        requestingChange
+                      }
                       className="mt-4 rounded-full bg-orange-600 px-6 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {requestingChange
@@ -1147,6 +1270,7 @@ export default function TrackOrderClient() {
             )}
 
             {/* CANCELLATION REQUEST */}
+
             {canRequestCancellation && (
               <div className="rounded-3xl border border-red-100 bg-white p-7 shadow-sm">
                 <h2 className="text-xl font-bold">
@@ -1154,8 +1278,9 @@ export default function TrackOrderClient() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  If you no longer need this order,
-                  you can send a cancellation request.
+                  If you no longer need this
+                  order, you can send a
+                  cancellation request.
                 </p>
 
                 <form
@@ -1166,7 +1291,9 @@ export default function TrackOrderClient() {
                 >
                   <textarea
                     rows={3}
-                    value={cancellationMessage}
+                    value={
+                      cancellationMessage
+                    }
                     onChange={(event) =>
                       setCancellationMessage(
                         event.target.value
@@ -1192,11 +1319,14 @@ export default function TrackOrderClient() {
             )}
 
             {/* CANCELLATION REQUEST STATUS */}
+
             {order.cancellationRequested &&
-              order.status !== "CANCELLED" && (
+              order.status !==
+                "CANCELLED" && (
                 <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-7">
                   <p className="font-bold text-yellow-800">
-                    Cancellation request submitted
+                    Cancellation request
+                    submitted
                   </p>
 
                   {order.cancellationRequestMessage && (
@@ -1208,13 +1338,14 @@ export default function TrackOrderClient() {
                   )}
 
                   <p className="mt-2 text-xs text-yellow-600">
-                    Sparsha Kitchen will review your
-                    request.
+                    Sparsha Kitchen will
+                    review your request.
                   </p>
                 </div>
               )}
 
             {/* INSTRUCTIONS */}
+
             {order.additionalInstructions && (
               <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
                 <h2 className="text-xl font-bold">
@@ -1222,12 +1353,15 @@ export default function TrackOrderClient() {
                 </h2>
 
                 <p className="mt-3 whitespace-pre-wrap leading-7 text-zinc-600">
-                  {order.additionalInstructions}
+                  {
+                    order.additionalInstructions
+                  }
                 </p>
               </div>
             )}
 
             {/* FOOT ACTIONS */}
+
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/recipes"
@@ -1248,6 +1382,7 @@ export default function TrackOrderClient() {
       </section>
 
       {/* FOOTER */}
+
       <footer className="border-t border-orange-100 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-sm sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <div>
@@ -1256,7 +1391,8 @@ export default function TrackOrderClient() {
             </div>
 
             <p className="text-zinc-500">
-              Homemade food, prepared with care.
+              Homemade food, prepared with
+              care.
             </p>
           </div>
 
