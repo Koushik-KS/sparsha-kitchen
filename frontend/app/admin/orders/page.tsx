@@ -515,13 +515,40 @@ export default function AdminOrdersPage() {
     );
   };
 
-  const advanceOrder = async (
-    order: Order
-  ) => {
-    const nextStatus =
-      NEXT_STATUS[order.status];
+  // ==========================================
+  // ADVANCE ORDER STATUS
+  // ==========================================
+
+  const advanceOrder = async (order: Order) => {
+    const nextStatus = NEXT_STATUS[order.status];
 
     if (!nextStatus) {
+      return;
+    }
+
+    // ==========================================
+    // DELIVERY PERSON REQUIRED
+    // ==========================================
+    // Admin must assign a delivery person
+    // BEFORE the order can move to Preparing.
+    //
+    // Once assigned, the same requirement
+    // remains for all later delivery stages.
+    // ==========================================
+
+    if (
+      !order.deliveryPerson &&
+      [
+        "PREPARING",
+        "READY",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+      ].includes(nextStatus)
+    ) {
+      setError(
+        "Please assign a delivery person before continuing the order."
+      );
+      setMessage("");
       return;
     }
 
@@ -1856,7 +1883,8 @@ export default function AdminOrdersPage() {
                         Instructions:
                       </span>{" "}
                       {
-                        selectedOrder.additionalInstructions
+                        selectedOrder
+                          .additionalInstructions
                       }
                     </p>
                   )}
@@ -1999,7 +2027,7 @@ export default function AdminOrdersPage() {
                           "REJECT"
                         )
                       }
-                      className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                      className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
                     >
                       Reject
                     </button>
