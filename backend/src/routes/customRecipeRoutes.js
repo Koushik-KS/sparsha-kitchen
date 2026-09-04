@@ -7,6 +7,9 @@ const {
   getAllCustomRecipeRequests,
   getCustomRecipeRequestById,
   updateCustomRecipeRequest,
+  approveCustomRecipeRequest,
+  rejectCustomRecipeRequest,
+  deleteCustomRecipeRequest,
   acceptCustomRecipeQuote,
   rejectCustomRecipeQuote,
   createOrderFromCustomRecipe,
@@ -34,8 +37,44 @@ router.get(
 );
 
 // ==========================================
-// CUSTOMER: ACCEPT QUOTE
+// ADMIN: APPROVE CUSTOM RECIPE
 // ==========================================
+//
+// Approval automatically creates a normal Order.
+// Same Track ID becomes Order.orderId.
+//
+// ==========================================
+
+router.post(
+  "/:id/approve",
+  protectAdmin,
+  approveCustomRecipeRequest
+);
+
+// ==========================================
+// ADMIN: REJECT CUSTOM RECIPE
+// ==========================================
+
+router.post(
+  "/:id/admin-reject",
+  protectAdmin,
+  rejectCustomRecipeRequest
+);
+
+// ==========================================
+// ADMIN: DELETE CUSTOM RECIPE REQUEST
+// ==========================================
+
+router.delete(
+  "/:id",
+  protectAdmin,
+  deleteCustomRecipeRequest
+);
+
+// ==========================================
+// CUSTOMER: ACCEPT OLD QUOTE FLOW
+// ==========================================
+// Kept for compatibility with existing code.
 
 router.post(
   "/:id/accept",
@@ -43,8 +82,9 @@ router.post(
 );
 
 // ==========================================
-// CUSTOMER: REJECT QUOTE
+// CUSTOMER: REJECT OLD QUOTE FLOW
 // ==========================================
+// Kept for compatibility with existing code.
 
 router.post(
   "/:id/reject",
@@ -55,6 +95,9 @@ router.post(
 // CUSTOMER: CREATE ORDER FROM APPROVED
 // CUSTOM RECIPE
 // ==========================================
+// Kept for compatibility.
+// New workflow creates order automatically
+// when Admin approves.
 
 router.post(
   "/:id/create-order",
@@ -74,6 +117,8 @@ router.get(
 // ==========================================
 // ADMIN: UPDATE CUSTOM RECIPE REQUEST
 // ==========================================
+// Used for quoted price / admin note only.
+// There is NO Save Request button.
 
 router.put(
   "/:id",

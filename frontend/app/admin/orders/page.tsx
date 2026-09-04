@@ -138,6 +138,51 @@ type DeliveryPersonsResponse = {
   deliveryPersons?: DeliveryPerson[];
 };
 
+type CustomRecipeStatus =
+  | "PENDING"
+  | "CONTACTED"
+  | "QUOTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+type CustomRecipeRequest = {
+  _id: string;
+  trackId: string;
+  customer: {
+    name: string;
+    phone: string;
+    email?: string;
+  };
+  recipeName: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  preferredDeliveryDate: string;
+  preferredDeliveryTime: string;
+  deliveryAddress: string;
+  mapPin?: string;
+  additionalInstructions?: string;
+  status: CustomRecipeStatus;
+  adminNote?: string;
+  quotedPrice?: number;
+  order?: Order | string | null;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+type CustomRecipeRequestsResponse = {
+  success: boolean;
+  message?: string;
+  requests?: CustomRecipeRequest[];
+};
+
+type CustomRecipeRequestResponse = {
+  success: boolean;
+  message?: string;
+  request?: CustomRecipeRequest;
+};
+
 const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING_CONFIRMATION: "Pending Confirmation",
   CUSTOMER_CONFIRMED: "Customer Confirmed",
@@ -166,6 +211,30 @@ const STATUS_CLASSES: Record<OrderStatus, string> = {
     "bg-emerald-100 text-emerald-800",
   CANCELLED:
     "bg-red-100 text-red-800",
+};
+
+const CUSTOM_RECIPE_STATUS_LABELS: Record<
+  CustomRecipeStatus,
+  string
+> = {
+  PENDING: "Pending",
+  CONTACTED: "Contacted",
+  QUOTED: "Quoted",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+};
+
+const CUSTOM_RECIPE_STATUS_CLASSES: Record<
+  CustomRecipeStatus,
+  string
+> = {
+  PENDING: "bg-yellow-100 text-yellow-800",
+  CONTACTED: "bg-blue-100 text-blue-800",
+  QUOTED: "bg-purple-100 text-purple-800",
+  APPROVED: "bg-green-100 text-green-800",
+  REJECTED: "bg-red-100 text-red-800",
+  CANCELLED: "bg-zinc-100 text-zinc-700",
 };
 
 const NEXT_STATUS: Partial<
@@ -251,6 +320,24 @@ export default function AdminOrdersPage() {
     useState<Order | null>(null);
 
   const [deliveryOtp, setDeliveryOtp] =
+    useState("");
+
+  const [customRecipeRequests, setCustomRecipeRequests] =
+    useState<CustomRecipeRequest[]>([]);
+
+  const [customRecipeLoading, setCustomRecipeLoading] =
+    useState(true);
+
+  const [selectedCustomRecipe, setSelectedCustomRecipe] =
+    useState<CustomRecipeRequest | null>(null);
+
+  const [customRecipeQuote, setCustomRecipeQuote] =
+    useState("");
+
+  const [customRecipeNote, setCustomRecipeNote] =
+    useState("");
+
+  const [customRecipeSearch, setCustomRecipeSearch] =
     useState("");
 
   const [editName, setEditName] = useState("");
@@ -340,6 +427,323 @@ export default function AdminOrdersPage() {
     }
   }, [getToken, logout, router]);
 
+  const fetchCustomRecipeRequests =
+    useCallback(async () => {
+      try {
+        setCustomRecipeLoading(true);
+
+        const token = getToken();
+
+        if (!token) {
+          router.replace("/admin/login");
+          return;
+        }
+
+        const response = await fetch(
+          `${API_URL}/custom-recipes`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          }
+        );
+
+        const data: CustomRecipeRequestsResponse =
+          await response.json();
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message ||
+              "Unable to load custom recipe requests."
+          );
+        }
+
+        setCustomRecipeRequests(
+          data.requests || []
+        );
+      } catch (err) {
+        console.error(
+          "Fetch custom recipe requests error:",
+          err
+        );
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load custom recipe requests."
+        );
+      } finally {
+        setCustomRecipeLoading(false);
+      }
+    }, [getToken, logout, router]);
+
+  const openCustomRecipeRequest = (
+    request: CustomRecipeRequest
+  ) => {
+    setError("");
+    setMessage("");
+    setSelectedCustomRecipe(request);
+    setCustomRecipeQuote(
+      Number(request.quotedPrice || 0) > 0
+        ? String(request.quotedPrice)
+        : ""
+    );
+    setCustomRecipeNote(request.adminNote || "");
+  };
+
+  const approveCustomRecipeRequest = async () => {
+    if (!selectedCustomRecipe) return;
+
+    const quotedPrice = Number(customRecipeQuote || 0);
+
+    if (!Number.isFinite(quotedPrice) || quotedPrice <= 0) {
+      setError("Enter a valid quoted price before approving the custom recipe.");
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(selectedCustomRecipe._id);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_URL}/custom-recipes/${selectedCustomRecipe._id}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            quotedPrice,
+            adminNote: customRecipeNote.trim(),
+          }),
+        }
+      );
+
+      const data: CustomRecipeRequestResponse = await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to approve custom recipe request."
+        );
+      }
+
+      setMessage(
+        data.message ||
+          "Custom recipe approved and normal order created successfully."
+      );
+
+      setSelectedCustomRecipe(null);
+      await fetchCustomRecipeRequests();
+      await fetchOrders();
+    } catch (err) {
+      console.error("Approve custom recipe request error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to approve custom recipe request."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const rejectCustomRecipeRequest = async () => {
+    if (!selectedCustomRecipe) return;
+
+    const confirmed = window.confirm(
+      `Reject custom recipe request ${selectedCustomRecipe.trackId}?\n\nThe customer will see REJECTED when they track this ID.`
+    );
+
+    if (!confirmed) return;
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(selectedCustomRecipe._id);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_URL}/custom-recipes/${selectedCustomRecipe._id}/admin-reject`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            adminNote: customRecipeNote.trim(),
+          }),
+        }
+      );
+
+      const data: CustomRecipeRequestResponse = await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to reject custom recipe request."
+        );
+      }
+
+      setMessage(
+        data.message || "Custom recipe request rejected successfully."
+      );
+
+      setSelectedCustomRecipe(null);
+      await fetchCustomRecipeRequests();
+    } catch (err) {
+      console.error("Reject custom recipe request error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to reject custom recipe request."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const deleteCustomRecipeRequest = async () => {
+    if (!selectedCustomRecipe) return;
+
+    const confirmed = window.confirm(
+      `DELETE CUSTOM RECIPE REQUEST ${selectedCustomRecipe.trackId}?\n\nThis permanently removes the request and cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(selectedCustomRecipe._id);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_URL}/custom-recipes/${selectedCustomRecipe._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data: CustomRecipeRequestResponse = await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to delete custom recipe request."
+        );
+      }
+
+      setMessage(
+        data.message || "Custom recipe request deleted successfully."
+      );
+      setSelectedCustomRecipe(null);
+      await fetchCustomRecipeRequests();
+    } catch (err) {
+      console.error("Delete custom recipe request error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to delete custom recipe request."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const filteredCustomRecipeRequests =
+    useMemo(() => {
+      const value =
+        customRecipeSearch
+          .trim()
+          .toLowerCase();
+
+      if (!value) {
+        return customRecipeRequests;
+      }
+
+      return customRecipeRequests.filter(
+        (request) =>
+          request.recipeName
+            .toLowerCase()
+            .includes(value) ||
+          request.customer.name
+            .toLowerCase()
+            .includes(value) ||
+          request.customer.phone
+            .toLowerCase()
+            .includes(value) ||
+          request.trackId
+            .toLowerCase()
+            .includes(value)
+      );
+    }, [
+      customRecipeRequests,
+      customRecipeSearch,
+    ]);
+
+  const customRecipePendingCount =
+    customRecipeRequests.filter(
+      (request) =>
+        request.status === "PENDING"
+    ).length;
+
+  const customRecipeQuotedCount =
+    customRecipeRequests.filter(
+      (request) =>
+        request.status === "QUOTED"
+    ).length;
+
+  const customRecipeApprovedCount =
+    customRecipeRequests.filter(
+      (request) =>
+        request.status === "APPROVED"
+    ).length;
+
   const fetchDeliveryPersons =
     useCallback(async () => {
       try {
@@ -395,12 +799,17 @@ export default function AdminOrdersPage() {
     const timer = window.setTimeout(() => {
       void fetchOrders();
       void fetchDeliveryPersons();
+      void fetchCustomRecipeRequests();
     }, 0);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [fetchOrders, fetchDeliveryPersons]);
+  }, [
+    fetchOrders,
+    fetchDeliveryPersons,
+    fetchCustomRecipeRequests,
+  ]);
 
   const filteredOrders = useMemo(() => {
     const searchValue =
@@ -1711,13 +2120,13 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <main className="min-h-screen bg-orange-50 text-zinc-900">
+    <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
       {/* HEADER */}
 
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <div>
-            <div className="text-2xl font-bold tracking-tight text-orange-600">
+            <div className="min-w-0 truncate text-xl font-bold tracking-tight text-orange-600 sm:text-2xl">
               Sparsha Kitchen
             </div>
 
@@ -1726,13 +2135,13 @@ export default function AdminOrdersPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() =>
                 router.push("/admin")
               }
-              className="rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              className="rounded-full border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Recipes
             </button>
@@ -1740,7 +2149,7 @@ export default function AdminOrdersPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              className="rounded-full border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Logout
             </button>
@@ -1750,14 +2159,14 @@ export default function AdminOrdersPage() {
 
       {/* MAIN */}
 
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="font-semibold uppercase tracking-wide text-orange-600">
               Dashboard
             </p>
 
-            <h1 className="mt-2 text-4xl font-bold tracking-tight">
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
               Order Management
             </h1>
 
@@ -1774,6 +2183,7 @@ export default function AdminOrdersPage() {
             onClick={() => {
               void fetchOrders();
               void fetchDeliveryPersons();
+              void fetchCustomRecipeRequests();
             }}
             disabled={loading}
             className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
@@ -1980,6 +2390,237 @@ export default function AdminOrdersPage() {
             )}
           </div>
         </div>
+
+        {/* CUSTOM RECIPE REQUESTS */}
+
+        <section className="mt-8 overflow-hidden rounded-3xl border border-orange-200 bg-white shadow-sm">
+          <div className="border-b border-orange-100 bg-orange-50 p-5 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-bold">
+                    Custom Recipe Requests
+                  </h2>
+
+                  {customRecipePendingCount > 0 && (
+                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-800">
+                      {customRecipePendingCount} pending
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-1 text-sm text-zinc-600">
+                  Review customer-requested recipes, set a quote,
+                  and approve or reject requests.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                <span className="rounded-full bg-yellow-100 px-3 py-1 text-yellow-800">
+                  Pending: {customRecipePendingCount}
+                </span>
+                <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-800">
+                  Quoted: {customRecipeQuotedCount}
+                </span>
+                <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">
+                  Approved: {customRecipeApprovedCount}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <input
+                type="text"
+                value={customRecipeSearch}
+                onChange={(event) =>
+                  setCustomRecipeSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="Search Track ID, recipe, customer, or phone"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              />
+            </div>
+          </div>
+
+          {customRecipeLoading ? (
+            <div className="p-10 text-center">
+              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600" />
+              <p className="mt-4 text-sm text-zinc-500">
+                Loading custom recipe requests...
+              </p>
+            </div>
+          ) : filteredCustomRecipeRequests.length === 0 ? (
+            <div className="p-8 text-center sm:p-10">
+              <div className="text-5xl">🍽️</div>
+              <h3 className="mt-4 text-lg font-bold">
+                No custom recipe requests
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                New customer requests will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-zinc-100">
+              {filteredCustomRecipeRequests.map(
+                (request) => (
+                  <article
+                    key={request._id}
+                    className="p-5 transition hover:bg-orange-50/40 sm:p-6"
+                  >
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="break-words text-lg font-bold">
+                            {request.recipeName}
+                          </h3>
+
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-bold ${
+                              CUSTOM_RECIPE_STATUS_CLASSES[
+                                request.status
+                              ]
+                            }`}
+                          >
+                            {
+                              CUSTOM_RECIPE_STATUS_LABELS[
+                                request.status
+                              ]
+                            }
+                          </span>
+                        </div>
+
+                        <p className="mt-2 break-all text-xs text-zinc-400">
+                          Track ID: {request.trackId}
+                        </p>
+
+                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+                          <p>
+                            <span className="font-semibold">
+                              Customer:
+                            </span>{" "}
+                            {request.customer.name}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="break-all">
+                              <span className="font-semibold">
+                                Phone:
+                              </span>{" "}
+                              {request.customer.phone}
+                            </p>
+
+                            {request.customer.phone && (
+                              <a
+                                href={getWhatsAppUrl(
+                                  request.customer.phone
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                                title="Open WhatsApp chat"
+                              >
+                                <span aria-hidden="true">🟢</span>
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
+
+                          <p>
+                            <span className="font-semibold">
+                              Quantity:
+                            </span>{" "}
+                            {request.quantity}{" "}
+                            {request.unit}
+                          </p>
+
+                          <p>
+                            <span className="font-semibold">
+                              Delivery:
+                            </span>{" "}
+                            {request.preferredDeliveryDate}{" "}
+                            ·{" "}
+                            {request.preferredDeliveryTime}
+                          </p>
+
+                          <div className="md:col-span-2">
+                            <span className="font-semibold">
+                              Address:
+                            </span>{" "}
+                            <span className="break-words text-zinc-700">
+                              {request.deliveryAddress ||
+                                "Not provided"}
+                            </span>
+
+                            {request.mapPin && (
+                              <a
+                                href={request.mapPin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-200"
+                                title="Open map location"
+                              >
+                                📍 Map
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl bg-zinc-50 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                            Description
+                          </p>
+
+                          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">
+                            {request.description}
+                          </p>
+                        </div>
+
+                        {request.additionalInstructions && (
+                          <p className="mt-3 break-words text-sm text-zinc-600">
+                            <span className="font-semibold">
+                              Instructions:
+                            </span>{" "}
+                            {request.additionalInstructions}
+                          </p>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+                            Quoted:{" "}
+                            {formatMoney(
+                              Number(
+                                request.quotedPrice || 0
+                              )
+                            )}
+                          </span>
+
+                          {request.order && (
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                              Order Created
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openCustomRecipeRequest(
+                            request
+                          )
+                        }
+                        className="w-full shrink-0 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-orange-700 sm:w-auto"
+                      >
+                        View / Manage
+                      </button>
+                    </div>
+                  </article>
+                )
+              )}
+            </div>
+          )}
+        </section>
 
         {/* ORDER LIST */}
 
@@ -3083,6 +3724,279 @@ export default function AdminOrdersPage() {
                     ? "Processing..."
                     : "Delete Order"}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM RECIPE REQUEST MODAL */}
+
+      {selectedCustomRecipe && (
+        <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/40 p-4 sm:p-8">
+          <div className="mx-auto max-w-3xl rounded-3xl bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-3xl border-b border-orange-100 bg-white px-5 py-5 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
+                  Custom Recipe Request
+                </p>
+
+                <h2 className="mt-1 break-words text-2xl font-bold">
+                  {selectedCustomRecipe.recipeName}
+                </h2>
+
+                <p className="mt-1 break-all text-xs text-zinc-400">
+                  Track ID: {selectedCustomRecipe.trackId}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedCustomRecipe(null)
+                }
+                className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-6 p-5 sm:p-6">
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    CUSTOM_RECIPE_STATUS_CLASSES[
+                      selectedCustomRecipe.status
+                    ]
+                  }`}
+                >
+                  {
+                    CUSTOM_RECIPE_STATUS_LABELS[
+                      selectedCustomRecipe.status
+                    ]
+                  }
+                </span>
+
+                {selectedCustomRecipe.order && (
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                    Order Created
+                  </span>
+                )}
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Customer
+                  </p>
+
+                  <p className="mt-1 break-words font-bold">
+                    {selectedCustomRecipe.customer.name}
+                  </p>
+
+                  <p className="mt-1 break-all text-sm text-zinc-600">
+                    {selectedCustomRecipe.customer.phone}
+                  </p>
+
+                  {selectedCustomRecipe.customer.email && (
+                    <p className="mt-1 break-all text-sm text-zinc-500">
+                      {selectedCustomRecipe.customer.email}
+                    </p>
+                  )}
+
+                  {selectedCustomRecipe.customer.phone && (
+                    <a
+                      href={getWhatsAppUrl(
+                        selectedCustomRecipe.customer.phone
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-700 hover:bg-green-200"
+                    >
+                      🟢 WhatsApp Customer
+                    </a>
+                  )}
+                </div>
+
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Requested Delivery
+                  </p>
+
+                  <p className="mt-1 font-bold">
+                    {selectedCustomRecipe.preferredDeliveryDate}
+                  </p>
+
+                  <p className="mt-1 text-sm text-zinc-600">
+                    {selectedCustomRecipe.preferredDeliveryTime}
+                  </p>
+
+                  <p className="mt-3 text-sm">
+                    <span className="font-semibold">
+                      Quantity:
+                    </span>{" "}
+                    {selectedCustomRecipe.quantity}{" "}
+                    {selectedCustomRecipe.unit}
+                  </p>
+                </div>
+              </div>
+
+              <section className="rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
+                  Delivery Address
+                </p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold text-zinc-800">
+                  {selectedCustomRecipe.deliveryAddress || "No address provided"}
+                </p>
+                {selectedCustomRecipe.mapPin && (
+                  <p className="mt-2 break-all text-xs text-zinc-500">
+                    Map Pin: {selectedCustomRecipe.mapPin}
+                  </p>
+                )}
+              </section>
+
+              <section>
+                <h3 className="text-lg font-bold">
+                  Customer Request
+                </h3>
+
+                <div className="mt-3 rounded-2xl border border-zinc-200 p-4">
+                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-zinc-700">
+                    {selectedCustomRecipe.description}
+                  </p>
+
+                  {selectedCustomRecipe.additionalInstructions && (
+                    <div className="mt-4 border-t border-zinc-100 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                        Additional Instructions
+                      </p>
+
+                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">
+                        {
+                          selectedCustomRecipe.additionalInstructions
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:p-5">
+                <h3 className="text-lg font-bold">
+                  Admin Decision
+                </h3>
+
+                <p className="mt-2 text-sm text-zinc-600">
+                  Enter the final price and optional internal note. Approve automatically creates the normal order using the same Track ID.
+                </p>
+
+                <div className="mt-4">
+                  <label
+                    htmlFor="custom-recipe-quote"
+                    className="block text-sm font-semibold"
+                  >
+                    Final Price
+                  </label>
+
+                  <input
+                    id="custom-recipe-quote"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={customRecipeQuote}
+                    onChange={(event) =>
+                      setCustomRecipeQuote(event.target.value)
+                    }
+                    placeholder="Enter final price"
+                    disabled={
+                      selectedCustomRecipe.status === "APPROVED" ||
+                      selectedCustomRecipe.status === "REJECTED"
+                    }
+                    className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 disabled:bg-zinc-100 disabled:opacity-70"
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <label
+                    htmlFor="custom-recipe-admin-note"
+                    className="block text-sm font-semibold"
+                  >
+                    Admin Note
+                  </label>
+
+                  <textarea
+                    id="custom-recipe-admin-note"
+                    rows={4}
+                    value={customRecipeNote}
+                    onChange={(event) =>
+                      setCustomRecipeNote(event.target.value)
+                    }
+                    placeholder="Internal note about this request"
+                    className="mt-2 w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  />
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {selectedCustomRecipe.status !== "APPROVED" &&
+                    selectedCustomRecipe.status !== "REJECTED" &&
+                    selectedCustomRecipe.status !== "CANCELLED" && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={actionLoading === selectedCustomRecipe._id}
+                          onClick={() => void approveCustomRecipeRequest()}
+                          className="rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {actionLoading === selectedCustomRecipe._id
+                            ? "Approving..."
+                            : "Approve"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={actionLoading === selectedCustomRecipe._id}
+                          onClick={() => void rejectCustomRecipeRequest()}
+                          className="rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                        >
+                          {actionLoading === selectedCustomRecipe._id
+                            ? "Processing..."
+                            : "Reject"}
+                        </button>
+                      </>
+                    )}
+
+                  <button
+                    type="button"
+                    disabled={actionLoading === selectedCustomRecipe._id}
+                    onClick={() => void deleteCustomRecipeRequest()}
+                    className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {actionLoading === selectedCustomRecipe._id
+                      ? "Processing..."
+                      : "Delete Request"}
+                  </button>
+                </div>
+              </section>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs leading-5 text-zinc-500">
+                Created:{" "}
+                {formatDateTime(
+                  selectedCustomRecipe.createdAt
+                )}
+
+                {selectedCustomRecipe.updatedAt && (
+                  <>
+                    <br />
+                    Last updated:{" "}
+                    {formatDateTime(
+                      selectedCustomRecipe.updatedAt
+                    )}
+                  </>
+                )}
+
+                <p className="mt-2">
+                  When approved, this request is automatically converted into a normal order using the same Track ID.
+                </p>
               </div>
             </div>
           </div>

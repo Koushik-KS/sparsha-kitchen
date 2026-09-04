@@ -8,21 +8,18 @@ const Order = require("../models/Order");
 // HELPERS
 // ==========================================
 
-// Generate customer-friendly order ID
 const generateOrderId = () => {
   const date = new Date();
 
   const year = date.getFullYear();
 
-  const month = String(date.getMonth() + 1).padStart(
-    2,
-    "0"
-  );
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
 
-  const day = String(date.getDate()).padStart(
-    2,
-    "0"
-  );
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   const randomNumber = Math.floor(
     1000 + Math.random() * 9000
@@ -32,18 +29,52 @@ const generateOrderId = () => {
 };
 
 // ==========================================
-// GENERATE SECURE TOKEN
+// SECURE TOKEN
 // ==========================================
 
 const generateToken = () => {
-  return crypto.randomBytes(32).toString("hex");
+  return crypto
+    .randomBytes(32)
+    .toString("hex");
+};
+
+// ==========================================
+// UNIQUE TRACK ID
+// ==========================================
+
+const generateUniqueTrackId = async () => {
+  let trackId;
+  let existingRequest;
+  let existingOrder;
+
+  do {
+    trackId = generateOrderId();
+
+    existingRequest =
+      await CustomRecipe.findOne({
+        trackId,
+      });
+
+    existingOrder =
+      await Order.findOne({
+        orderId: trackId,
+      });
+  } while (
+    existingRequest ||
+    existingOrder
+  );
+
+  return trackId;
 };
 
 // ==========================================
 // CUSTOMER: CREATE CUSTOM RECIPE REQUEST
 // ==========================================
 
-const createCustomRecipeRequest = async (req, res) => {
+const createCustomRecipeRequest = async (
+  req,
+  res
+) => {
   try {
     const {
       customer,
@@ -53,12 +84,14 @@ const createCustomRecipeRequest = async (req, res) => {
       unit,
       preferredDeliveryDate,
       preferredDeliveryTime,
+      deliveryAddress,
+      mapPin,
       additionalInstructions,
     } = req.body;
 
-    // ==========================================
-    // BASIC VALIDATION
-    // ==========================================
+    // ========================================
+    // REQUIRED FIELDS
+    // ========================================
 
     if (
       !customer ||
@@ -66,87 +99,177 @@ const createCustomRecipeRequest = async (req, res) => {
       !customer.phone ||
       !recipeName ||
       !description ||
-      !quantity ||
+      quantity === undefined ||
+      quantity === null ||
       !unit ||
       !preferredDeliveryDate ||
-      !preferredDeliveryTime
+      !preferredDeliveryTime ||
+      !deliveryAddress
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Customer name, phone, recipe name, description, quantity, unit, delivery date and delivery time are required",
+          "Customer name, phone, recipe name, description, quantity, unit, delivery date, delivery time and delivery address are required",
       });
     }
 
-    // ==========================================
-    // QUANTITY VALIDATION
-    // ==========================================
+    // ========================================
+    // QUANTITY
+    // ========================================
 
-    const parsedQuantity = Number(quantity);
+    const parsedQuantity =
+      Number(quantity);
 
     if (
-      !Number.isFinite(parsedQuantity) ||
+      !Number.isFinite(
+        parsedQuantity
+      ) ||
       parsedQuantity <= 0
     ) {
       return res.status(400).json({
         success: false,
-        message: "Quantity must be greater than zero",
+        message:
+          "Quantity must be greater than zero",
       });
     }
 
-    // ==========================================
-    // CREATE CUSTOM RECIPE REQUEST
-    // ==========================================
+    // ========================================
+    // PHONE
+    // ========================================
+
+    const phone = String(
+      customer.phone
+    )
+      .replace(/\D/g, "")
+      .slice(0, 10);
+
+    if (phone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please enter a valid 10-digit phone number",
+      });
+    }
+
+    // ========================================
+    // TRACK ID
+    // ========================================
+
+    const trackId =
+      await generateUniqueTrackId();
+
+    // ========================================
+    // CREATE REQUEST
+    // ========================================
 
     const customRecipe =
       await CustomRecipe.create({
         customer: {
-          name: customer.name.trim(),
+          name:
+            String(
+              customer.name
+            ).trim(),
 
-          phone: customer.phone.trim(),
+          phone,
 
           email:
-            customer.email?.trim().toLowerCase() || "",
+            String(
+              customer.email || ""
+            )
+              .trim()
+              .toLowerCase(),
         },
 
-        recipeName: recipeName.trim(),
+        trackId,
 
-        description: description.trim(),
+        recipeName:
+          String(
+            recipeName
+          ).trim(),
 
-        quantity: parsedQuantity,
+        description:
+          String(
+            description
+          ).trim(),
 
-        unit: unit.trim(),
+        quantity:
+          parsedQuantity,
+
+        unit:
+          String(unit).trim(),
 
         preferredDeliveryDate:
-          preferredDeliveryDate.trim(),
+          String(
+            preferredDeliveryDate
+          ).trim(),
 
         preferredDeliveryTime:
-          preferredDeliveryTime.trim(),
+          String(
+            preferredDeliveryTime
+          ).trim(),
+
+        deliveryAddress:
+          String(
+            deliveryAddress
+          ).trim(),
+
+        mapPin:
+          typeof mapPin === "string"
+            ? mapPin.trim()
+            : "",
 
         additionalInstructions:
-          additionalInstructions?.trim() || "",
+          typeof additionalInstructions ===
+          "string"
+            ? additionalInstructions.trim()
+            : "",
 
-        status: "PENDING",
+        status:
+          "PENDING",
 
-        adminNote: "",
+        adminNote:
+          "",
 
-        quotedPrice: 0,
+        quotedPrice:
+          0,
 
-        order: null,
+        order:
+          null,
       });
 
-    // ==========================================
+    console.log(
+      "CUSTOM RECIPE CREATED:",
+      {
+        id:
+          customRecipe._id,
+
+        trackId:
+          customRecipe.trackId,
+
+        recipeName:
+          customRecipe.recipeName,
+
+        status:
+          customRecipe.status,
+      }
+    );
+
+    // ========================================
     // RESPONSE
-    // ==========================================
+    // ========================================
 
     return res.status(201).json({
       success: true,
 
       message:
-        "Custom recipe request received. Sparsha Kitchen will contact you shortly.",
+        "Custom recipe request received. Please save your Track ID.",
 
       customRecipe: {
-        id: customRecipe._id,
+        id:
+          customRecipe._id,
+
+        trackId:
+          customRecipe.trackId,
 
         recipeName:
           customRecipe.recipeName,
@@ -164,9 +287,22 @@ const createCustomRecipeRequest = async (req, res) => {
       error
     );
 
+    if (
+      error.code === 11000
+    ) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Unable to generate a unique Track ID. Please try again.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message:
+        "Server error",
+      error:
+        error.message,
     });
   }
 };
@@ -175,831 +311,1586 @@ const createCustomRecipeRequest = async (req, res) => {
 // ADMIN: GET ALL CUSTOM RECIPE REQUESTS
 // ==========================================
 
-const getAllCustomRecipeRequests = async (
-  req,
-  res
-) => {
-  try {
-    const requests =
-      await CustomRecipe.find()
-        .populate("order")
-        .sort({
-          createdAt: -1,
-        });
+const getAllCustomRecipeRequests =
+  async (req, res) => {
+    try {
+      const requests =
+        await CustomRecipe.find()
+          .populate("order")
+          .sort({
+            createdAt: -1,
+          });
 
-    return res.status(200).json({
-      success: true,
-      requests,
-    });
-  } catch (error) {
-    console.error(
-      "Get custom recipe requests error:",
-      error
-    );
+      return res.status(200).json({
+        success: true,
+        requests,
+      });
+    } catch (error) {
+      console.error(
+        "Get custom recipe requests error:",
+        error
+      );
 
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
-
-// ==========================================
-// ADMIN: GET ONE CUSTOM RECIPE REQUEST
-// ==========================================
-
-const getCustomRecipeRequestById = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
-
-    // ==========================================
-    // VALIDATE ID
-    // ==========================================
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
+      return res.status(500).json({
         success: false,
         message:
-          "Invalid custom recipe request ID",
+          "Server error",
       });
     }
-
-    // ==========================================
-    // FIND REQUEST
-    // ==========================================
-
-    const request =
-      await CustomRecipe.findById(id)
-        .populate("order");
-
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Custom recipe request not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      request,
-    });
-  } catch (error) {
-    console.error(
-      "Get custom recipe request error:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+  };
 
 // ==========================================
-// ADMIN: UPDATE CUSTOM RECIPE REQUEST
+// ADMIN: GET ONE REQUEST
 // ==========================================
 
-const updateCustomRecipeRequest = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
-
-    // ==========================================
-    // VALIDATE ID
-    // ==========================================
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid custom recipe request ID",
-      });
-    }
-
-    // ==========================================
-    // FIND REQUEST
-    // ==========================================
-
-    const request =
-      await CustomRecipe.findById(id);
-
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Custom recipe request not found",
-      });
-    }
-
-    const {
-      status,
-      adminNote,
-      quotedPrice,
-    } = req.body;
-
-    // ==========================================
-    // STATUS
-    // ==========================================
-
-    if (status !== undefined) {
-      const allowedStatuses = [
-        "PENDING",
-        "CONTACTED",
-        "QUOTED",
-        "APPROVED",
-        "REJECTED",
-        "CANCELLED",
-      ];
-
-      if (!allowedStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid custom recipe status",
-        });
-      }
-
-      request.status = status;
-    }
-
-    // ==========================================
-    // ADMIN NOTE
-    // ==========================================
-
-    if (adminNote !== undefined) {
-      request.adminNote =
-        String(adminNote).trim();
-    }
-
-    // ==========================================
-    // QUOTED PRICE
-    // ==========================================
-
-    if (quotedPrice !== undefined) {
-      const price = Number(quotedPrice);
+const getCustomRecipeRequestById =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
 
       if (
-        !Number.isFinite(price) ||
-        price < 0
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
       ) {
         return res.status(400).json({
           success: false,
-          message: "Invalid quoted price",
+          message:
+            "Invalid custom recipe request ID",
         });
       }
 
-      request.quotedPrice = price;
+      const request =
+        await CustomRecipe.findById(
+          id
+        ).populate("order");
+
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Custom recipe request not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        request,
+      });
+    } catch (error) {
+      console.error(
+        "Get custom recipe request error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Server error",
+      });
     }
-
-    // ==========================================
-    // SAVE
-    // ==========================================
-
-    await request.save();
-
-    return res.status(200).json({
-      success: true,
-
-      message:
-        "Custom recipe request updated successfully",
-
-      request,
-    });
-  } catch (error) {
-    console.error(
-      "Update custom recipe request error:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+  };
 
 // ==========================================
-// CUSTOMER: ACCEPT CUSTOM RECIPE QUOTE
+// ADMIN: UPDATE PRICE / NOTE
 // ==========================================
 
-const acceptCustomRecipeQuote = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
+const updateCustomRecipeRequest =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
 
-    // ==========================================
-    // VALIDATE ID
-    // ==========================================
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
+      const request =
+        await CustomRecipe.findById(
+          id
+        );
+
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Custom recipe request not found",
+        });
+      }
+
+      const {
+        adminNote,
+        quotedPrice,
+      } = req.body;
+
+      const updateData = {};
+
+      // ========================================
+      // ADMIN NOTE
+      // ========================================
+
+      if (
+        adminNote !== undefined
+      ) {
+        updateData.adminNote =
+          String(
+            adminNote
+          ).trim();
+      }
+
+      // ========================================
+      // PRICE
+      // ========================================
+
+      if (
+        quotedPrice !== undefined
+      ) {
+        const price =
+          Number(
+            quotedPrice
+          );
+
+        if (
+          !Number.isFinite(
+            price
+          ) ||
+          price < 0
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid quoted price",
+          });
+        }
+
+        updateData.quotedPrice =
+          price;
+      }
+
+      // ========================================
+      // UPDATE WITHOUT FULL VALIDATION
+      // ========================================
+
+      const updatedRequest =
+        await CustomRecipe.findByIdAndUpdate(
+          id,
+          {
+            $set:
+              updateData,
+          },
+          {
+            new: true,
+            runValidators: false,
+          }
+        );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Custom recipe request updated successfully",
+
+        request:
+          updatedRequest,
+      });
+    } catch (error) {
+      console.error(
+        "Update custom recipe request error:",
+        error
+      );
+
+      return res.status(500).json({
         success: false,
         message:
-          "Invalid custom recipe request ID",
+          "Server error",
+        error:
+          error.message,
       });
     }
+  };
 
-    // ==========================================
-    // FIND REQUEST
-    // ==========================================
+// ==========================================
+// ADMIN: APPROVE CUSTOM RECIPE
+// ==========================================
 
-    const request =
-      await CustomRecipe.findById(id);
+const approveCustomRecipeRequest =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
 
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Custom recipe request not found",
-      });
-    }
+      const {
+        quotedPrice,
+        adminNote,
+      } = req.body;
 
-    // ==========================================
-    // MUST BE QUOTED
-    // ==========================================
+      // ========================================
+      // VALIDATE ID
+      // ========================================
 
-    if (request.status !== "QUOTED") {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Only a quoted custom recipe can be accepted",
-      });
-    }
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
 
-    // ==========================================
-    // VALIDATE PRICE
-    // ==========================================
+      // ========================================
+      // FIND REQUEST
+      // ========================================
 
-    if (
-      !Number.isFinite(
-        Number(request.quotedPrice)
-      ) ||
-      Number(request.quotedPrice) <= 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "A valid quoted price is required",
-      });
-    }
+      const customRecipe =
+        await CustomRecipe.findById(
+          id
+        );
 
-    // ==========================================
-    // APPROVE QUOTE
-    // ==========================================
+      if (!customRecipe) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Custom recipe request not found",
+        });
+      }
 
-    request.status = "APPROVED";
+      // ========================================
+      // ALREADY CONVERTED
+      // ========================================
 
-    await request.save();
+      if (
+        customRecipe.order
+      ) {
+        const existingOrder =
+          await Order.findById(
+            customRecipe.order
+          );
 
-    // ==========================================
-    // RESPONSE
-    // ==========================================
+        return res.status(400).json({
+          success: false,
 
-    return res.status(200).json({
-      success: true,
+          message:
+            "This custom recipe has already been converted into an order.",
 
-      message:
-        "Custom recipe quote accepted successfully",
+          orderId:
+            existingOrder?.orderId ||
+            customRecipe.trackId ||
+            null,
+        });
+      }
 
-      customRecipe: {
-        id: request._id,
+      // ========================================
+      // TRACK ID REQUIRED
+      // ========================================
 
-        recipeName:
-          request.recipeName,
+      if (
+        !customRecipe.trackId
+      ) {
+        return res.status(400).json({
+          success: false,
 
+          message:
+            "This request does not have a Track ID. Please create a new custom recipe request.",
+        });
+      }
+
+      // ========================================
+      // ADDRESS REQUIRED
+      // ========================================
+
+      if (
+        !customRecipe.deliveryAddress ||
+        !String(
+          customRecipe.deliveryAddress
+        ).trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Delivery address is missing. This request cannot be approved.",
+        });
+      }
+
+      // ========================================
+      // PRICE
+      // ========================================
+
+      let price;
+
+      if (
+        quotedPrice !== undefined
+      ) {
+        price =
+          Number(
+            quotedPrice
+          );
+      } else {
+        price =
+          Number(
+            customRecipe.quotedPrice
+          );
+      }
+
+      if (
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Enter a valid quoted price greater than zero before approving.",
+        });
+      }
+
+      // ========================================
+      // QUANTITY
+      // ========================================
+
+      const quantity =
+        Number(
+          customRecipe.quantity
+        );
+
+      if (
+        !Number.isFinite(
+          quantity
+        ) ||
+        quantity <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Custom recipe quantity must be greater than zero.",
+        });
+      }
+
+      // ========================================
+      // DELIVERY DATE
+      // ========================================
+
+      const deliveryDate =
+        new Date(
+          customRecipe.preferredDeliveryDate
+        );
+
+      if (
+        Number.isNaN(
+          deliveryDate.getTime()
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Invalid preferred delivery date.",
+        });
+      }
+
+      // ========================================
+      // CHECK ORDER ID
+      // ========================================
+
+      const existingOrder =
+        await Order.findOne({
+          orderId:
+            customRecipe.trackId,
+        });
+
+      if (existingOrder) {
+        return res.status(409).json({
+          success: false,
+
+          message:
+            "This Track ID is already being used by an order.",
+        });
+      }
+
+      // ========================================
+      // INTERNAL TOKENS
+      // ========================================
+
+      const trackingToken =
+        generateToken();
+
+      const confirmationToken =
+        generateToken();
+
+      // ========================================
+      // CALCULATE TOTAL
+      // ========================================
+
+      const totalPrice =
+        quantity * price;
+
+      const foodTotal =
+        totalPrice;
+
+      const deliveryCharge =
+        0;
+
+      const grandTotal =
+        foodTotal +
+        deliveryCharge;
+
+      // ========================================
+      // CREATE NORMAL ORDER
+      // ========================================
+
+      const order =
+        await Order.create({
+          // SAME TRACK ID
+          orderId:
+            customRecipe.trackId,
+
+          // CUSTOMER
+          customer: {
+            name:
+              customRecipe.customer.name,
+
+            phone:
+              customRecipe.customer.phone,
+
+            email:
+              customRecipe.customer.email ||
+              "",
+          },
+
+          // DELIVERY
+          deliveryAddress:
+            customRecipe.deliveryAddress.trim(),
+
+          mapPin:
+            customRecipe.mapPin ||
+            "",
+
+          requestedDeliveryDate:
+            deliveryDate,
+
+          requestedDeliveryTime:
+            customRecipe.preferredDeliveryTime,
+
+          additionalInstructions:
+            customRecipe.additionalInstructions ||
+            "",
+
+          // ITEMS
+          items: [
+            {
+              recipe:
+                null,
+
+              name:
+                customRecipe.recipeName,
+
+              quantity,
+
+              unit:
+                customRecipe.unit,
+
+              pricePerUnit:
+                price,
+
+              totalPrice,
+
+              isCustomRecipe:
+                true,
+            },
+          ],
+
+          // TOTALS
+          foodTotal,
+
+          deliveryCharge,
+
+          grandTotal,
+
+          // ======================================
+          // PAYMENT
+          // ======================================
+          //
+          // IMPORTANT:
+          // Order.js allows:
+          // UNPAID / PARTIALLY_PAID / PAID
+          //
+          // Initial custom order = UNPAID
+          //
+          paymentStatus:
+            "UNPAID",
+
+          paidAmount:
+            0,
+
+          paymentHistory:
+            [],
+
+          // DELIVERY PERSON
+          deliveryPerson:
+            null,
+
+          // ORDER STATUS
+          status:
+            "PENDING_CONFIRMATION",
+
+          // CUSTOMER CONFIRMATION
+          customerConfirmed:
+            false,
+
+          customerConfirmedAt:
+            null,
+
+          // ADMIN CONFIRMATION
+          adminConfirmed:
+            false,
+
+          adminConfirmedAt:
+            null,
+
+          // CHANGE REQUEST
+          changeRequested:
+            false,
+
+          changeRequestMessage:
+            "",
+
+          // CANCELLATION
+          cancellationRequested:
+            false,
+
+          cancellationRequestMessage:
+            "",
+
+          // STATUS HISTORY
+          statusHistory: [
+            {
+              status:
+                "PENDING_CONFIRMATION",
+
+              changedBy:
+                "admin",
+
+              note:
+                "Order automatically created after Admin approval of custom recipe request.",
+            },
+          ],
+
+          // INTERNAL TRACKING TOKEN
+          trackingToken,
+
+          // CONFIRMATION TOKEN
+          confirmationToken,
+
+          confirmationTokenExpiresAt:
+            new Date(
+              Date.now() +
+                24 *
+                  60 *
+                  60 *
+                  1000
+            ),
+
+          confirmationTokenUsed:
+            false,
+        });
+
+      // ========================================
+      // LINK CUSTOM RECIPE TO ORDER
+      // ========================================
+
+      const updateData = {
         status:
-          request.status,
+          "APPROVED",
 
         quotedPrice:
-          request.quotedPrice,
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Accept custom recipe quote error:",
-      error
-    );
+          price,
 
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+        order:
+          order._id,
+      };
+
+      if (
+        adminNote !== undefined
+      ) {
+        updateData.adminNote =
+          String(
+            adminNote
+          ).trim();
+      }
+
+      await CustomRecipe.findByIdAndUpdate(
+        id,
+        {
+          $set:
+            updateData,
+        },
+        {
+          new: true,
+          runValidators: false,
+        }
+      );
+
+      console.log(
+        "CUSTOM RECIPE APPROVED:",
+        {
+          customRecipeId:
+            customRecipe._id,
+
+          trackId:
+            customRecipe.trackId,
+
+          orderId:
+            order.orderId,
+
+          orderMongoId:
+            order._id,
+        }
+      );
+
+      // ========================================
+      // RESPONSE
+      // ========================================
+
+      return res.status(201).json({
+        success: true,
+
+        message:
+          "Custom recipe approved and normal order created successfully.",
+
+        customRecipe: {
+          id:
+            customRecipe._id,
+
+          trackId:
+            customRecipe.trackId,
+
+          status:
+            "APPROVED",
+
+          order:
+            order._id,
+        },
+
+        order: {
+          id:
+            order._id,
+
+          orderId:
+            order.orderId,
+
+          status:
+            order.status,
+
+          paymentStatus:
+            order.paymentStatus,
+
+          foodTotal:
+            order.foodTotal,
+
+          deliveryCharge:
+            order.deliveryCharge,
+
+          grandTotal:
+            order.grandTotal,
+
+          trackingToken:
+            order.trackingToken,
+
+          confirmationToken:
+            order.confirmationToken,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "=========================================="
+      );
+
+      console.error(
+        "APPROVE CUSTOM RECIPE ERROR"
+      );
+
+      console.error(
+        "Name:",
+        error.name
+      );
+
+      console.error(
+        "Message:",
+        error.message
+      );
+
+      console.error(
+        "Stack:",
+        error.stack
+      );
+
+      console.error(
+        "=========================================="
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to approve custom recipe.",
+
+        error:
+          error.message,
+      });
+    }
+  };
 
 // ==========================================
-// CUSTOMER: REJECT CUSTOM RECIPE QUOTE
+// ADMIN: REJECT CUSTOM RECIPE
 // ==========================================
 
-const rejectCustomRecipeQuote = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
+const rejectCustomRecipeRequest =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
 
-    // ==========================================
-    // VALIDATE ID
-    // ==========================================
+      const {
+        adminNote,
+      } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid custom recipe request ID",
-      });
-    }
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    // ==========================================
-    // FIND REQUEST
-    // ==========================================
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
 
-    const request =
-      await CustomRecipe.findById(id);
+      const request =
+        await CustomRecipe.findById(
+          id
+        );
 
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Custom recipe request not found",
-      });
-    }
+      if (!request) {
+        return res.status(404).json({
+          success: false,
 
-    // ==========================================
-    // MUST BE QUOTED
-    // ==========================================
+          message:
+            "Custom recipe request not found",
+        });
+      }
 
-    if (request.status !== "QUOTED") {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Only a quoted custom recipe can be rejected",
-      });
-    }
+      // ========================================
+      // ALREADY AN ORDER
+      // ========================================
 
-    // ==========================================
-    // REJECT QUOTE
-    // ==========================================
+      if (
+        request.order
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    request.status = "REJECTED";
+          message:
+            "This custom recipe has already been converted into an order and cannot be rejected.",
+        });
+      }
 
-    await request.save();
-
-    // ==========================================
-    // RESPONSE
-    // ==========================================
-
-    return res.status(200).json({
-      success: true,
-
-      message:
-        "Custom recipe quote rejected successfully",
-
-      customRecipe: {
-        id: request._id,
-
-        recipeName:
-          request.recipeName,
-
+      const updateData = {
         status:
-          request.status,
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Reject custom recipe quote error:",
-      error
-    );
+          "REJECTED",
+      };
 
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+      if (
+        adminNote !== undefined
+      ) {
+        updateData.adminNote =
+          String(
+            adminNote
+          ).trim();
+      }
+
+      const updatedRequest =
+        await CustomRecipe.findByIdAndUpdate(
+          id,
+          {
+            $set:
+              updateData,
+          },
+          {
+            new: true,
+            runValidators: false,
+          }
+        );
+
+      console.log(
+        "CUSTOM RECIPE REJECTED:",
+        {
+          id:
+            request._id,
+
+          trackId:
+            request.trackId,
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Custom recipe request rejected successfully.",
+
+        request:
+          updatedRequest,
+      });
+    } catch (error) {
+      console.error(
+        "Reject custom recipe request error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to reject custom recipe request.",
+
+        error:
+          error.message,
+      });
+    }
+  };
+
+// ==========================================
+// ADMIN: DELETE CUSTOM RECIPE REQUEST
+// ==========================================
+//
+// Deletes ONLY the CustomRecipe record.
+// If a normal Order already exists, the Order
+// is NOT deleted.
+// ==========================================
+
+const deleteCustomRecipeRequest =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
+
+      const request =
+        await CustomRecipe.findById(
+          id
+        );
+
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+
+          message:
+            "Custom recipe request not found",
+        });
+      }
+
+      // ========================================
+      // DELETE REQUEST ONLY
+      // ========================================
+
+      await CustomRecipe.findByIdAndDelete(
+        id
+      );
+
+      console.log(
+        "CUSTOM RECIPE REQUEST DELETED:",
+        {
+          id:
+            request._id,
+
+          trackId:
+            request.trackId,
+
+          linkedOrder:
+            request.order
+              ? String(
+                  request.order
+                )
+              : null,
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Custom recipe request deleted successfully. Any existing normal order remains unchanged.",
+      });
+    } catch (error) {
+      console.error(
+        "Delete custom recipe request error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to delete custom recipe request.",
+
+        error:
+          error.message,
+      });
+    }
+  };
+
+// ==========================================
+// CUSTOMER: ACCEPT OLD QUOTE FLOW
+// ==========================================
+
+const acceptCustomRecipeQuote =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
+
+      const request =
+        await CustomRecipe.findById(
+          id
+        );
+
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+
+          message:
+            "Custom recipe request not found",
+        });
+      }
+
+      if (
+        request.status !==
+        "QUOTED"
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Only a quoted custom recipe can be accepted",
+        });
+      }
+
+      const quotedPrice =
+        Number(
+          request.quotedPrice
+        );
+
+      if (
+        !Number.isFinite(
+          quotedPrice
+        ) ||
+        quotedPrice <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "A valid quoted price is required",
+        });
+      }
+
+      const updatedRequest =
+        await CustomRecipe.findByIdAndUpdate(
+          id,
+          {
+            $set: {
+              status:
+                "APPROVED",
+            },
+          },
+          {
+            new: true,
+            runValidators: false,
+          }
+        );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Custom recipe quote accepted successfully",
+
+        customRecipe: {
+          id:
+            updatedRequest._id,
+
+          trackId:
+            updatedRequest.trackId,
+
+          recipeName:
+            updatedRequest.recipeName,
+
+          status:
+            updatedRequest.status,
+
+          quotedPrice:
+            updatedRequest.quotedPrice,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Accept custom recipe quote error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Server error",
+
+        error:
+          error.message,
+      });
+    }
+  };
+
+// ==========================================
+// CUSTOMER: REJECT OLD QUOTE FLOW
+// ==========================================
+
+const rejectCustomRecipeQuote =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
+
+      const request =
+        await CustomRecipe.findById(
+          id
+        );
+
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+
+          message:
+            "Custom recipe request not found",
+        });
+      }
+
+      if (
+        request.status !==
+        "QUOTED"
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Only a quoted custom recipe can be rejected",
+        });
+      }
+
+      const updatedRequest =
+        await CustomRecipe.findByIdAndUpdate(
+          id,
+          {
+            $set: {
+              status:
+                "REJECTED",
+            },
+          },
+          {
+            new: true,
+            runValidators: false,
+          }
+        );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Custom recipe quote rejected successfully",
+
+        customRecipe: {
+          id:
+            updatedRequest._id,
+
+          trackId:
+            updatedRequest.trackId,
+
+          recipeName:
+            updatedRequest.recipeName,
+
+          status:
+            updatedRequest.status,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Reject custom recipe quote error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Server error",
+
+        error:
+          error.message,
+      });
+    }
+  };
 
 // ==========================================
 // CUSTOMER: CREATE ORDER FROM APPROVED
-// CUSTOM RECIPE
+// ==========================================
+//
+// Compatibility endpoint.
+// New workflow uses Admin Approve.
 // ==========================================
 
-const createOrderFromCustomRecipe = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
+const createOrderFromCustomRecipe =
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
 
-    const {
-      deliveryAddress,
-      mapPin,
-    } = req.body;
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          id
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    // ==========================================
-    // VALIDATE CUSTOM RECIPE ID
-    // ==========================================
+          message:
+            "Invalid custom recipe request ID",
+        });
+      }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid custom recipe request ID",
-      });
-    }
+      const customRecipe =
+        await CustomRecipe.findById(
+          id
+        );
 
-    // ==========================================
-    // VALIDATE DELIVERY ADDRESS
-    // ==========================================
+      if (!customRecipe) {
+        return res.status(404).json({
+          success: false,
 
-    if (
-      !deliveryAddress ||
-      typeof deliveryAddress !== "string" ||
-      !deliveryAddress.trim()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Delivery address is required to create the order",
-      });
-    }
+          message:
+            "Custom recipe request not found",
+        });
+      }
 
-    // ==========================================
-    // FIND CUSTOM RECIPE
-    // ==========================================
+      // ========================================
+      // ALREADY EXISTS
+      // ========================================
 
-    const customRecipe =
-      await CustomRecipe.findById(id);
+      if (
+        customRecipe.order
+      ) {
+        const existingOrder =
+          await Order.findById(
+            customRecipe.order
+          );
 
-    if (!customRecipe) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Custom recipe request not found",
-      });
-    }
+        return res.status(200).json({
+          success: true,
 
-    // ==========================================
-    // MUST BE APPROVED
-    // ==========================================
+          message:
+            "Order already exists for this custom recipe.",
 
-    if (customRecipe.status !== "APPROVED") {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Custom recipe must be approved before creating an order",
-      });
-    }
+          order:
+            existingOrder,
 
-    // ==========================================
-    // PREVENT DUPLICATE ORDER
-    // ==========================================
+          customRecipe,
+        });
+      }
 
-    if (customRecipe.order) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "An order has already been created for this custom recipe",
+      // ========================================
+      // MUST BE APPROVED
+      // ========================================
 
-        orderId:
-          customRecipe.order,
-      });
-    }
+      if (
+        customRecipe.status !==
+        "APPROVED"
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    // ==========================================
-    // VALIDATE QUOTED PRICE
-    // ==========================================
+          message:
+            "Custom recipe must be approved before creating an order",
+        });
+      }
 
-    const quotedPrice =
-      Number(customRecipe.quotedPrice);
+      // ========================================
+      // REQUIRED DATA
+      // ========================================
 
-    if (
-      !Number.isFinite(quotedPrice) ||
-      quotedPrice <= 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "A valid quoted price is required before creating an order",
-      });
-    }
+      if (
+        !customRecipe.trackId
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    // ==========================================
-    // VALIDATE QUANTITY
-    // ==========================================
+          message:
+            "Track ID is missing",
+        });
+      }
 
-    const quantity =
-      Number(customRecipe.quantity);
+      if (
+        !customRecipe.deliveryAddress
+      ) {
+        return res.status(400).json({
+          success: false,
 
-    if (
-      !Number.isFinite(quantity) ||
-      quantity <= 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Custom recipe quantity must be greater than zero",
-      });
-    }
+          message:
+            "Delivery address is required",
+        });
+      }
 
-    // ==========================================
-    // VALIDATE DELIVERY DATE
-    // ==========================================
+      const quotedPrice =
+        Number(
+          customRecipe.quotedPrice
+        );
 
-    const deliveryDate =
-      new Date(
-        customRecipe.preferredDeliveryDate
+      if (
+        !Number.isFinite(
+          quotedPrice
+        ) ||
+        quotedPrice <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "A valid quoted price is required",
+        });
+      }
+
+      const quantity =
+        Number(
+          customRecipe.quantity
+        );
+
+      if (
+        !Number.isFinite(
+          quantity
+        ) ||
+        quantity <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Custom recipe quantity must be greater than zero",
+        });
+      }
+
+      const deliveryDate =
+        new Date(
+          customRecipe.preferredDeliveryDate
+        );
+
+      if (
+        Number.isNaN(
+          deliveryDate.getTime()
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Invalid preferred delivery date",
+        });
+      }
+
+      // ========================================
+      // TOKENS
+      // ========================================
+
+      const trackingToken =
+        generateToken();
+
+      const confirmationToken =
+        generateToken();
+
+      // ========================================
+      // TOTALS
+      // ========================================
+
+      const totalPrice =
+        quantity *
+        quotedPrice;
+
+      const foodTotal =
+        totalPrice;
+
+      const deliveryCharge =
+        0;
+
+      const grandTotal =
+        foodTotal +
+        deliveryCharge;
+
+      // ========================================
+      // CREATE ORDER
+      // ========================================
+
+      const order =
+        await Order.create({
+          orderId:
+            customRecipe.trackId,
+
+          customer: {
+            name:
+              customRecipe.customer.name,
+
+            phone:
+              customRecipe.customer.phone,
+
+            email:
+              customRecipe.customer.email ||
+              "",
+          },
+
+          deliveryAddress:
+            customRecipe.deliveryAddress.trim(),
+
+          mapPin:
+            customRecipe.mapPin ||
+            "",
+
+          requestedDeliveryDate:
+            deliveryDate,
+
+          requestedDeliveryTime:
+            customRecipe.preferredDeliveryTime,
+
+          additionalInstructions:
+            customRecipe.additionalInstructions ||
+            "",
+
+          items: [
+            {
+              recipe:
+                null,
+
+              name:
+                customRecipe.recipeName,
+
+              quantity,
+
+              unit:
+                customRecipe.unit,
+
+              pricePerUnit:
+                quotedPrice,
+
+              totalPrice,
+
+              isCustomRecipe:
+                true,
+            },
+          ],
+
+          foodTotal,
+
+          deliveryCharge,
+
+          grandTotal,
+
+          // CORRECT PAYMENT STATUS
+          paymentStatus:
+            "UNPAID",
+
+          paidAmount:
+            0,
+
+          paymentHistory:
+            [],
+
+          deliveryPerson:
+            null,
+
+          status:
+            "PENDING_CONFIRMATION",
+
+          customerConfirmed:
+            false,
+
+          customerConfirmedAt:
+            null,
+
+          adminConfirmed:
+            false,
+
+          adminConfirmedAt:
+            null,
+
+          changeRequested:
+            false,
+
+          changeRequestMessage:
+            "",
+
+          cancellationRequested:
+            false,
+
+          cancellationRequestMessage:
+            "",
+
+          statusHistory: [
+            {
+              status:
+                "PENDING_CONFIRMATION",
+
+              changedBy:
+                "system",
+
+              note:
+                "Order created from approved custom recipe request.",
+            },
+          ],
+
+          trackingToken,
+
+          confirmationToken,
+
+          confirmationTokenExpiresAt:
+            new Date(
+              Date.now() +
+                24 *
+                  60 *
+                  60 *
+                  1000
+            ),
+
+          confirmationTokenUsed:
+            false,
+        });
+
+      // ========================================
+      // LINK ORDER
+      // ========================================
+
+      await CustomRecipe.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            order:
+              order._id,
+          },
+        },
+        {
+          new: true,
+          runValidators: false,
+        }
       );
 
-    if (
-      Number.isNaN(
-        deliveryDate.getTime()
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
+      return res.status(201).json({
+        success: true,
+
         message:
-          "Invalid preferred delivery date",
+          "Order created successfully from approved custom recipe",
+
+        order: {
+          id:
+            order._id,
+
+          orderId:
+            order.orderId,
+
+          status:
+            order.status,
+
+          paymentStatus:
+            order.paymentStatus,
+
+          foodTotal:
+            order.foodTotal,
+
+          deliveryCharge:
+            order.deliveryCharge,
+
+          grandTotal:
+            order.grandTotal,
+
+          trackingToken:
+            order.trackingToken,
+
+          confirmationToken:
+            order.confirmationToken,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "CREATE ORDER FROM CUSTOM RECIPE ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Server error",
+
+        error:
+          error.message,
       });
     }
-
-    // ==========================================
-    // GENERATE TRACKING TOKEN
-    // ==========================================
-
-    const trackingToken =
-      generateToken();
-
-    // ==========================================
-    // GENERATE CONFIRMATION TOKEN
-    // ==========================================
-
-    const confirmationToken =
-      generateToken();
-
-    // ==========================================
-    // GENERATE UNIQUE ORDER ID
-    // ==========================================
-
-    let orderId;
-    let existingOrder;
-
-    do {
-      orderId =
-        generateOrderId();
-
-      existingOrder =
-        await Order.findOne({
-          orderId,
-        });
-    } while (existingOrder);
-
-    // ==========================================
-    // CALCULATE TOTAL PRICE
-    // ==========================================
-
-    const totalPrice =
-      quantity * quotedPrice;
-
-    // ==========================================
-    // CREATE CUSTOM ORDER ITEM
-    // ==========================================
-
-    const orderItem = {
-      recipe: null,
-
-      name:
-        customRecipe.recipeName,
-
-      quantity,
-
-      unit:
-        customRecipe.unit,
-
-      pricePerUnit:
-        quotedPrice,
-
-      totalPrice,
-
-      isCustomRecipe: true,
-    };
-
-    // ==========================================
-    // FOOD TOTAL
-    // ==========================================
-
-    const foodTotal =
-      totalPrice;
-
-    // ==========================================
-    // DELIVERY CHARGE
-    // ==========================================
-
-    const deliveryCharge = 0;
-
-    // ==========================================
-    // GRAND TOTAL
-    // ==========================================
-
-    const grandTotal =
-      foodTotal + deliveryCharge;
-
-    // ==========================================
-    // CREATE ORDER
-    // ==========================================
-
-    const order =
-      await Order.create({
-        orderId,
-
-        customer: {
-          name:
-            customRecipe.customer.name,
-
-          phone:
-            customRecipe.customer.phone,
-
-          email:
-            customRecipe.customer.email || "",
-        },
-
-        // IMPORTANT:
-        // Delivery address comes from
-        // the customer at order creation.
-        deliveryAddress:
-          deliveryAddress.trim(),
-
-        mapPin:
-          typeof mapPin === "string"
-            ? mapPin.trim()
-            : "",
-
-        requestedDeliveryDate:
-          deliveryDate,
-
-        requestedDeliveryTime:
-          customRecipe.preferredDeliveryTime,
-
-        additionalInstructions:
-          customRecipe.additionalInstructions ||
-          "",
-
-        items: [
-          orderItem,
-        ],
-
-        foodTotal,
-
-        deliveryCharge,
-
-        grandTotal,
-
-        deliveryPerson: null,
-
-        status:
-          "PENDING_CONFIRMATION",
-
-        customerConfirmed: false,
-
-        customerConfirmedAt: null,
-
-        adminConfirmed: false,
-
-        adminConfirmedAt: null,
-
-        changeRequested: false,
-
-        changeRequestMessage: "",
-
-        cancellationRequested: false,
-
-        cancellationRequestMessage: "",
-
-        statusHistory: [
-          {
-            status:
-              "PENDING_CONFIRMATION",
-
-            changedBy:
-              "system",
-
-            note:
-              "Order created from approved custom recipe request",
-          },
-        ],
-
-        trackingToken,
-
-        confirmationToken,
-
-        confirmationTokenExpiresAt:
-          new Date(
-            Date.now() +
-              24 * 60 * 60 * 1000
-          ),
-
-        confirmationTokenUsed: false,
-      });
-
-    // ==========================================
-    // LINK ORDER TO CUSTOM RECIPE
-    // ==========================================
-
-    customRecipe.order =
-      order._id;
-
-    await customRecipe.save();
-
-    // ==========================================
-    // RESPONSE
-    // ==========================================
-
-    return res.status(201).json({
-      success: true,
-
-      message:
-        "Order created successfully from approved custom recipe",
-
-      order: {
-        id:
-          order._id,
-
-        orderId:
-          order.orderId,
-
-        status:
-          order.status,
-
-        foodTotal:
-          order.foodTotal,
-
-        deliveryCharge:
-          order.deliveryCharge,
-
-        grandTotal:
-          order.grandTotal,
-
-        trackingToken:
-          order.trackingToken,
-
-        confirmationToken:
-          order.confirmationToken,
-      },
-
-      customRecipe: {
-        id:
-          customRecipe._id,
-
-        status:
-          customRecipe.status,
-
-        order:
-          customRecipe.order,
-      },
-    });
-  } catch (error) {
-    console.error(
-      "=========================================="
-    );
-
-    console.error(
-      "CREATE ORDER FROM CUSTOM RECIPE ERROR"
-    );
-
-    console.error(
-      "Name:",
-      error.name
-    );
-
-    console.error(
-      "Message:",
-      error.message
-    );
-
-    console.error(
-      "Stack:",
-      error.stack
-    );
-
-    console.error(
-      "=========================================="
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
-  }
-};
+  };
 
 // ==========================================
 // EXPORTS
@@ -1013,6 +1904,12 @@ module.exports = {
   getCustomRecipeRequestById,
 
   updateCustomRecipeRequest,
+
+  approveCustomRecipeRequest,
+
+  rejectCustomRecipeRequest,
+
+  deleteCustomRecipeRequest,
 
   acceptCustomRecipeQuote,
 

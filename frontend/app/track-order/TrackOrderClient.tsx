@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 
 const API_URL = "http://localhost:5000/api";
@@ -32,22 +37,18 @@ type Order = {
     email?: string;
   };
 
-  // DELIVERY
   deliveryAddress?: string;
   mapPin?: string;
   requestedDeliveryDate?: string;
   requestedDeliveryTime?: string;
   additionalInstructions?: string;
 
-  // ITEMS
   items?: OrderItem[];
 
-  // PRICE
   foodTotal?: number;
   deliveryCharge?: number;
   grandTotal?: number;
 
-  // PAYMENT
   paymentStatus?: "UNPAID" | "PARTIALLY_PAID" | "PAID";
   paidAmount?: number;
   remainingAmount?: number;
@@ -60,39 +61,31 @@ type Order = {
     note?: string;
   }[];
 
-  // DELIVERY PERSON
   deliveryPerson?: {
     name?: string;
     phone?: string;
     whatsapp?: string;
   } | null;
 
-  // STATUS
   status: string;
 
-  // CONFIRMATION
   customerConfirmed?: boolean;
   customerConfirmedAt?: string | null;
   adminConfirmed?: boolean;
   adminConfirmedAt?: string | null;
 
-  // CHANGE REQUEST
   changeRequested?: boolean;
   changeRequestMessage?: string;
 
-  // CANCELLATION
   cancellationRequested?: boolean;
   cancellationRequestMessage?: string;
 
-  // OTP
   deliveryOtp?: string | null;
   deliveryOtpVerified?: boolean;
   deliveryOtpExpiresAt?: string | null;
 
-  // HISTORY
   statusHistory?: StatusHistory[];
 
-  // TOKENS
   trackingToken?: string;
   confirmationToken?: string | null;
 
@@ -491,9 +484,6 @@ export default function TrackOrderClient() {
         "OTP generated successfully. Enter the 6-digit OTP."
       );
 
-      // Development-only OTP.
-      // The backend currently returns this until
-      // real WhatsApp OTP integration is configured.
       if (data.otp) {
         setRecoveryDevOtp(
           String(data.otp)
@@ -619,7 +609,6 @@ export default function TrackOrderClient() {
     setRecoveryError("");
     setRecoveryMessage("");
 
-    // Load the selected order immediately.
     try {
       setLoading(true);
       setError("");
@@ -711,15 +700,23 @@ export default function TrackOrderClient() {
         }
       );
 
-      const data: OrderResponse = await response.json();
+      const data: OrderResponse =
+        await response.json();
 
-      if (!response.ok || !data.success || !data.order) {
+      if (
+        !response.ok ||
+        !data.success ||
+        !data.order
+      ) {
         return;
       }
 
       setOrder(data.order);
     } catch (error) {
-      console.error("Live order refresh error:", error);
+      console.error(
+        "Live order refresh error:",
+        error
+      );
     }
   }, [orderId, phone]);
 
@@ -739,9 +736,10 @@ export default function TrackOrderClient() {
       return;
     }
 
-    const interval = window.setInterval(() => {
-      refreshOrder();
-    }, 5000);
+    const interval =
+      window.setInterval(() => {
+        refreshOrder();
+      }, 5000);
 
     return () => {
       window.clearInterval(interval);
@@ -833,7 +831,6 @@ export default function TrackOrderClient() {
                   returnedOrder.confirmationToken ??
                   null,
 
-                // KEEP EXISTING ADDRESS
                 deliveryAddress:
                   returnedOrder.deliveryAddress ||
                   previousOrder.deliveryAddress,
@@ -999,9 +996,7 @@ export default function TrackOrderClient() {
       }
 
       try {
-        setRequestingCancellation(
-          true
-        );
+        setRequestingCancellation(true);
 
         setError("");
         setActionMessage("");
@@ -1066,9 +1061,7 @@ export default function TrackOrderClient() {
             : "Unable to submit the cancellation request."
         );
       } finally {
-        setRequestingCancellation(
-          false
-        );
+        setRequestingCancellation(false);
       }
     };
 
@@ -1113,41 +1106,38 @@ export default function TrackOrderClient() {
   // ==========================================
 
   return (
-    <main className="min-h-screen bg-orange-50 text-zinc-900">
-
+    <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
       {/* ========================================
           HEADER
       ======================================== */}
 
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <Link
             href="/"
-            className="text-2xl font-bold tracking-tight text-orange-600"
+            className="min-w-0 truncate text-xl font-bold tracking-tight text-orange-600 sm:text-2xl"
           >
             Sparsha Kitchen
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
-
+          <nav className="hidden items-center gap-6 md:flex lg:gap-8">
             <Link
               href="/"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Home
             </Link>
 
             <Link
               href="/recipes"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Recipes
             </Link>
 
             <Link
               href="/custom-recipe"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Custom Recipe
             </Link>
@@ -1158,16 +1148,20 @@ export default function TrackOrderClient() {
             >
               Track Order
             </Link>
-
           </nav>
 
           <Link
             href="/recipes"
-            className="rounded-full bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
+            className="shrink-0 rounded-full bg-orange-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-700 sm:px-5 sm:text-sm"
           >
-            Browse Recipes
-          </Link>
+            <span className="sm:hidden">
+              Recipes
+            </span>
 
+            <span className="hidden sm:inline">
+              Browse Recipes
+            </span>
+          </Link>
         </div>
       </header>
 
@@ -1175,37 +1169,32 @@ export default function TrackOrderClient() {
           PAGE
       ======================================== */}
 
-      <section className="mx-auto max-w-5xl px-6 py-14 lg:px-8">
-
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-
-          <p className="font-semibold uppercase tracking-wide text-orange-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">
             Sparsha Kitchen
           </p>
 
-          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">
             Track Your Order
           </h1>
 
-          <p className="mt-5 text-lg leading-8 text-zinc-600">
-            Enter your Order ID and phone number to view the latest status of your order.
+          <p className="mt-4 text-sm leading-6 text-zinc-600 sm:mt-5 sm:text-lg sm:leading-8">
+            Enter your Order ID and phone number to view
+            the latest status of your order.
           </p>
-
         </div>
 
         {/* ========================================
             SEARCH FORM
         ======================================== */}
 
-        <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
-
+        <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:mt-10 sm:rounded-3xl sm:p-9">
           <form
             onSubmit={fetchOrder}
             className="space-y-5"
           >
-
             <div>
-
               <label
                 htmlFor="orderId"
                 className="block text-sm font-semibold text-zinc-800"
@@ -1218,19 +1207,15 @@ export default function TrackOrderClient() {
                 type="text"
                 value={orderId}
                 onChange={(event) =>
-                  setOrderId(
-                    event.target.value
-                  )
+                  setOrderId(event.target.value)
                 }
                 placeholder="Example: SK-20260831-1234"
                 autoComplete="off"
-                className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
               />
-
             </div>
 
             <div>
-
               <label
                 htmlFor="phone"
                 className="block text-sm font-semibold text-zinc-800"
@@ -1241,27 +1226,30 @@ export default function TrackOrderClient() {
               <input
                 id="phone"
                 type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 value={phone}
                 onChange={(event) =>
                   setPhone(
                     event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10)
                   )
                 }
                 placeholder="Phone number used for the order"
                 autoComplete="tel"
-                className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
               />
-
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+              <div className="break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-700">
                 {error}
               </div>
             )}
 
             {actionMessage && (
-              <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+              <div className="break-words rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium leading-6 text-green-700">
                 {actionMessage}
               </div>
             )}
@@ -1269,13 +1257,12 @@ export default function TrackOrderClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-full bg-orange-600 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
             >
               {loading
                 ? "Finding Order..."
                 : "Track Order"}
             </button>
-
           </form>
 
           {/* ========================================
@@ -1296,7 +1283,7 @@ export default function TrackOrderClient() {
                   setRecoveryOrders([]);
                   setRecoveryDevOtp("");
                 }}
-                className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                className="text-sm font-semibold text-orange-600 transition hover:text-orange-700 hover:underline"
               >
                 Forgot Order ID?
               </button>
@@ -1304,34 +1291,33 @@ export default function TrackOrderClient() {
           )}
 
           {recoveryMode && (
-            <div className="mt-7 rounded-3xl border border-orange-200 bg-orange-50 p-6 sm:p-7">
-
-              <div className="flex items-start justify-between gap-4">
-
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-wide text-orange-600">
+            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:mt-7 sm:rounded-3xl sm:p-7">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wide text-orange-600 sm:text-sm">
                     Order ID Recovery
                   </p>
 
-                  <h2 className="mt-1 text-xl font-bold text-zinc-900">
+                  <h2 className="mt-1 break-words text-lg font-bold text-zinc-900 sm:text-xl">
                     Recover Your Order ID
                   </h2>
 
                   <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    Verify the phone number used for your order to find your Order ID.
+                    Verify the phone number used for your
+                    order to find your Order ID.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={closeRecovery}
-                  className="rounded-full px-3 py-1 text-sm font-semibold text-zinc-500 hover:bg-white hover:text-zinc-800"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
                 >
                   Close
                 </button>
-
               </div>
 
+              {/* RECOVERY PHONE */}
               {recoveryStep === "PHONE" && (
                 <form
                   onSubmit={requestRecoveryOtp}
@@ -1348,20 +1334,24 @@ export default function TrackOrderClient() {
                     <input
                       id="recoveryPhone"
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={recoveryPhone}
                       onChange={(event) =>
                         setRecoveryPhone(
                           event.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 10)
                         )
                       }
                       placeholder="Phone number used for the order"
                       autoComplete="tel"
-                      className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                     />
                   </div>
 
                   {recoveryError && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                    <div className="break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-700">
                       {recoveryError}
                     </div>
                   )}
@@ -1369,7 +1359,7 @@ export default function TrackOrderClient() {
                   <button
                     type="submit"
                     disabled={recoveryLoading}
-                    className="w-full rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-full bg-orange-600 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
                   >
                     {recoveryLoading
                       ? "Sending OTP..."
@@ -1378,12 +1368,13 @@ export default function TrackOrderClient() {
                 </form>
               )}
 
+              {/* RECOVERY OTP */}
               {recoveryStep === "OTP" && (
                 <form
                   onSubmit={verifyRecoveryOtp}
                   className="mt-6 space-y-4"
                 >
-                  <div className="rounded-2xl bg-white p-4 text-sm text-zinc-600">
+                  <div className="rounded-2xl bg-white p-4 text-sm leading-6 text-zinc-600">
                     OTP sent for{" "}
                     <span className="font-bold text-zinc-900">
                       {recoveryPhone}
@@ -1391,21 +1382,24 @@ export default function TrackOrderClient() {
                   </div>
 
                   {recoveryMessage && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+                    <div className="break-words rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium leading-6 text-green-700">
                       {recoveryMessage}
                     </div>
                   )}
 
                   {recoveryDevOtp && (
-                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm leading-6 text-yellow-800">
                       <p className="font-bold">
                         Development OTP
                       </p>
-                      <p className="mt-1">
+
+                      <p className="mt-1 text-2xl font-bold tracking-widest">
                         {recoveryDevOtp}
                       </p>
+
                       <p className="mt-1 text-xs">
-                        This is shown only because WhatsApp OTP integration is not configured yet.
+                        This is shown only because WhatsApp
+                        OTP integration is not configured yet.
                       </p>
                     </div>
                   )}
@@ -1434,12 +1428,12 @@ export default function TrackOrderClient() {
                       }
                       placeholder="Enter OTP"
                       autoComplete="one-time-code"
-                      className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-center text-xl font-bold tracking-[0.35em] outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-3 py-3 text-center text-lg font-bold tracking-[0.25em] outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-xl sm:tracking-[0.35em]"
                     />
                   </div>
 
                   {recoveryError && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                    <div className="break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-700">
                       {recoveryError}
                     </div>
                   )}
@@ -1447,10 +1441,8 @@ export default function TrackOrderClient() {
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       type="submit"
-                      disabled={
-                        recoveryLoading
-                      }
-                      className="flex-1 rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={recoveryLoading}
+                      className="w-full rounded-full bg-orange-600 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1 sm:text-base"
                     >
                       {recoveryLoading
                         ? "Verifying..."
@@ -1459,9 +1451,7 @@ export default function TrackOrderClient() {
 
                     <button
                       type="button"
-                      disabled={
-                        recoveryLoading
-                      }
+                      disabled={recoveryLoading}
                       onClick={() => {
                         setRecoveryStep("PHONE");
                         setRecoveryOtp("");
@@ -1469,7 +1459,7 @@ export default function TrackOrderClient() {
                         setRecoveryMessage("");
                         setRecoveryDevOtp("");
                       }}
-                      className="flex-1 rounded-full border border-zinc-200 bg-white px-6 py-3.5 font-semibold text-zinc-700 hover:bg-zinc-50"
+                      className="w-full rounded-full border border-zinc-200 bg-white px-6 py-3.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 sm:flex-1 sm:text-base"
                     >
                       Change Phone
                     </button>
@@ -1477,17 +1467,17 @@ export default function TrackOrderClient() {
                 </form>
               )}
 
+              {/* RECOVERED ORDERS */}
               {recoveryStep === "ORDERS" && (
                 <div className="mt-6">
-
                   {recoveryMessage && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+                    <div className="break-words rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium leading-6 text-green-700">
                       {recoveryMessage}
                     </div>
                   )}
 
                   {recoveryOrders.length === 0 ? (
-                    <div className="mt-4 rounded-2xl bg-white p-5 text-sm text-zinc-600">
+                    <div className="mt-4 rounded-2xl bg-white p-5 text-sm leading-6 text-zinc-600">
                       No orders were found.
                     </div>
                   ) : (
@@ -1504,30 +1494,29 @@ export default function TrackOrderClient() {
                                 recoveredOrder.orderId
                               )
                             }
-                            className="w-full rounded-2xl border border-zinc-200 bg-white p-5 text-left transition hover:border-orange-400 hover:shadow-sm"
+                            className="w-full rounded-2xl border border-zinc-200 bg-white p-4 text-left transition hover:border-orange-400 hover:shadow-sm sm:p-5"
                           >
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-xs font-medium text-zinc-500">
                                   Order ID
                                 </p>
 
-                                <p className="mt-1 text-lg font-bold text-orange-600">
+                                <p className="mt-1 break-all text-base font-bold text-orange-600 sm:text-lg">
                                   {
                                     recoveredOrder.orderId
                                   }
                                 </p>
 
-                                <p className="mt-1 text-sm text-zinc-500">
+                                <p className="mt-1 break-words text-sm text-zinc-500">
                                   {
                                     recoveredOrder.customerName
                                   }
                                 </p>
                               </div>
 
-                              <div className="text-left sm:text-right">
-                                <p className="text-sm font-semibold text-zinc-800">
+                              <div className="text-left sm:shrink-0 sm:text-right">
+                                <p className="break-words text-sm font-semibold text-zinc-800">
                                   {getStatusLabel(
                                     recoveredOrder.status
                                   )}
@@ -1541,11 +1530,10 @@ export default function TrackOrderClient() {
                                   ).toFixed(2)}
                                 </p>
 
-                                <p className="mt-1 text-xs text-orange-600">
+                                <p className="mt-1 text-xs font-semibold text-orange-600">
                                   View Order →
                                 </p>
                               </div>
-
                             </div>
                           </button>
                         )
@@ -1563,17 +1551,14 @@ export default function TrackOrderClient() {
                       setRecoveryMessage("");
                       setRecoveryDevOtp("");
                     }}
-                    className="mt-5 rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                    className="mt-5 w-full rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto"
                   >
                     Search Again
                   </button>
-
                 </div>
               )}
-
             </div>
           )}
-
         </div>
 
         {/* ========================================
@@ -1581,86 +1566,70 @@ export default function TrackOrderClient() {
         ======================================== */}
 
         {order && (
-          <div className="mt-10 space-y-7">
+          <div className="mt-8 space-y-5 sm:mt-10 sm:space-y-7">
+            {/* ORDER HEADER */}
 
-            {/* ========================================
-                ORDER HEADER
-            ======================================== */}
-
-            <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
-
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-
-                <div>
-
+            <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-9">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-zinc-500">
                     Order ID
                   </p>
 
-                  <h2 className="mt-1 text-2xl font-bold text-orange-600">
+                  <h2 className="mt-1 break-all text-xl font-bold text-orange-600 sm:text-2xl">
                     {order.orderId}
                   </h2>
 
-                  <p className="mt-2 text-sm text-zinc-500">
+                  <p className="mt-2 text-xs text-zinc-500 sm:text-sm">
                     Placed{" "}
                     {formatDateTime(
                       order.createdAt
                     )}
                   </p>
-
                 </div>
 
-                <div className="rounded-full bg-orange-100 px-4 py-2 text-center text-sm font-bold text-orange-700">
+                <div className="w-fit max-w-full rounded-full bg-orange-100 px-3 py-2 text-center text-xs font-bold text-orange-700 sm:px-4 sm:text-sm">
                   {getStatusLabel(
                     order.status
                   )}
                 </div>
-
               </div>
 
-              <div className="mt-7 rounded-2xl bg-orange-50 p-5">
-
-                <p className="font-semibold text-zinc-900">
+              <div className="mt-6 rounded-2xl bg-orange-50 p-4 sm:mt-7 sm:p-5">
+                <p className="break-words text-sm font-semibold leading-6 text-zinc-900 sm:text-base">
                   {statusDescriptions[
                     order.status
                   ] ||
                     "Your order status has been updated."}
                 </p>
-
               </div>
-
             </div>
 
-            {/* ========================================
-                DELIVERY OTP
-            ======================================== */}
+            {/* DELIVERY OTP */}
 
             {order.status ===
               "OUT_FOR_DELIVERY" &&
               order.deliveryOtp &&
               !order.deliveryOtpVerified && (
-                <div className="rounded-3xl border-2 border-orange-300 bg-orange-50 p-7 shadow-sm sm:p-9">
-
+                <div className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-5 shadow-sm sm:rounded-3xl sm:p-9">
                   <div className="text-center">
-
-                    <p className="text-sm font-bold uppercase tracking-widest text-orange-600">
+                    <p className="text-xs font-bold uppercase tracking-widest text-orange-600 sm:text-sm">
                       Delivery OTP
                     </p>
 
-                    <h2 className="mt-2 text-2xl font-bold text-zinc-900">
+                    <h2 className="mt-2 text-xl font-bold text-zinc-900 sm:text-2xl">
                       Your delivery verification code
                     </h2>
 
-                    <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-white px-6 py-7 shadow-sm">
-
-                      <p className="text-5xl font-black tracking-[0.35em] text-orange-600">
+                    <div className="mx-auto mt-5 max-w-sm rounded-2xl bg-white px-4 py-6 shadow-sm sm:mt-6 sm:px-6 sm:py-7">
+                      <p className="break-all text-4xl font-black tracking-[0.2em] text-orange-600 sm:text-5xl sm:tracking-[0.35em]">
                         {order.deliveryOtp}
                       </p>
-
                     </div>
 
-                    <p className="mt-5 text-sm leading-6 text-zinc-600">
-                      Give this 6-digit OTP to the delivery person after receiving your order.
+                    <p className="mt-4 text-sm leading-6 text-zinc-600 sm:mt-5">
+                      Give this 6-digit OTP to the delivery
+                      person after receiving your order.
                     </p>
 
                     {order.deliveryOtpExpiresAt && (
@@ -1671,52 +1640,42 @@ export default function TrackOrderClient() {
                         )}
                       </p>
                     )}
-
                   </div>
-
                 </div>
               )}
 
-            {/* ========================================
-                OTP VERIFIED
-            ======================================== */}
+            {/* OTP VERIFIED */}
 
             {order.deliveryOtpVerified && (
-              <div className="rounded-3xl border border-green-200 bg-green-50 p-7 shadow-sm">
-
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm sm:rounded-3xl sm:p-7">
                 <p className="font-bold text-green-800">
                   ✓ Delivery OTP verified
                 </p>
 
-                <p className="mt-1 text-sm text-green-700">
-                  Your delivery verification has been completed.
+                <p className="mt-1 text-sm leading-6 text-green-700">
+                  Your delivery verification has been
+                  completed.
                 </p>
 
                 {order.status ===
                   "DELIVERED" && (
-                  <p className="mt-2 text-sm font-semibold text-green-700">
+                  <p className="mt-2 text-sm font-semibold leading-6 text-green-700">
                     Your order has been delivered successfully.
                   </p>
                 )}
-
               </div>
             )}
 
-            {/* ========================================
-                ORDER PROGRESS
-            ======================================== */}
+            {/* ORDER PROGRESS */}
 
-            <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
-
-              <h2 className="text-2xl font-bold">
+            <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-9">
+              <h2 className="text-xl font-bold sm:text-2xl">
                 Order Progress
               </h2>
 
-              <div className="mt-7 space-y-5">
-
+              <div className="mt-6 space-y-5 sm:mt-7">
                 {statusSteps.map(
                   (status, index) => {
-
                     const isCurrent =
                       order.status ===
                         status ||
@@ -1741,13 +1700,11 @@ export default function TrackOrderClient() {
                     return (
                       <div
                         key={status}
-                        className="flex gap-4"
+                        className="flex gap-3 sm:gap-4"
                       >
-
-                        <div className="flex flex-col items-center">
-
+                        <div className="flex shrink-0 flex-col items-center">
                           <div
-                            className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
                               isCompleted
                                 ? "bg-orange-600 text-white"
                                 : "bg-zinc-100 text-zinc-400"
@@ -1770,13 +1727,11 @@ export default function TrackOrderClient() {
                               }`}
                             />
                           )}
-
                         </div>
 
-                        <div className="pb-4">
-
+                        <div className="min-w-0 pb-4">
                           <p
-                            className={`font-semibold ${
+                            className={`break-words font-semibold ${
                               isCurrent
                                 ? "text-orange-600"
                                 : "text-zinc-800"
@@ -1800,9 +1755,7 @@ export default function TrackOrderClient() {
                               )}
                             </p>
                           )}
-
                         </div>
-
                       </div>
                     );
                   }
@@ -1810,77 +1763,61 @@ export default function TrackOrderClient() {
 
                 {order.status ===
                   "CANCELLED" && (
-                  <div className="flex gap-4">
-
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white">
+                  <div className="flex gap-3 sm:gap-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white sm:h-9 sm:w-9">
                       !
                     </div>
 
-                    <div>
-
+                    <div className="min-w-0">
                       <p className="font-semibold text-red-600">
                         Order Cancelled
                       </p>
 
-                      <p className="mt-1 text-sm text-zinc-500">
+                      <p className="mt-1 text-sm leading-6 text-zinc-500">
                         This order is no longer active.
                       </p>
-
                     </div>
-
                   </div>
                 )}
-
               </div>
-
             </div>
 
-            {/* ========================================
-                CUSTOMER + DELIVERY DETAILS
-            ======================================== */}
+            {/* CUSTOMER + DELIVERY DETAILS */}
 
-            <div className="grid gap-7 lg:grid-cols-2">
-
+            <div className="grid gap-5 sm:gap-7 lg:grid-cols-2">
               {/* CUSTOMER */}
 
-              <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Customer Details
                 </h2>
 
                 <div className="mt-5 space-y-4 text-sm">
-
                   <div>
-
                     <p className="text-zinc-500">
                       Name
                     </p>
 
-                    <p className="mt-1 font-semibold">
+                    <p className="mt-1 break-words font-semibold">
                       {order.customer?.name ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   <div>
-
                     <p className="text-zinc-500">
                       Phone
                     </p>
 
-                    <p className="mt-1 font-semibold">
+                    <p className="mt-1 break-all font-semibold">
                       {order.customer?.phone ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   {order.customer
                     ?.email && (
                     <div>
-
                       <p className="text-zinc-500">
                         Email
                       </p>
@@ -1891,26 +1828,20 @@ export default function TrackOrderClient() {
                             .email
                         }
                       </p>
-
                     </div>
                   )}
-
                 </div>
-
               </div>
 
               {/* DELIVERY */}
 
-              <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Delivery Details
                 </h2>
 
                 <div className="mt-5 space-y-4 text-sm">
-
                   <div>
-
                     <p className="text-zinc-500">
                       Delivery Date
                     </p>
@@ -1920,11 +1851,9 @@ export default function TrackOrderClient() {
                         order.requestedDeliveryDate
                       )}
                     </p>
-
                   </div>
 
                   <div>
-
                     <p className="text-zinc-500">
                       Delivery Time
                     </p>
@@ -1933,57 +1862,43 @@ export default function TrackOrderClient() {
                       {order.requestedDeliveryTime ||
                         "Not specified"}
                     </p>
-
                   </div>
 
-                  {/* ADDRESS */}
-
                   <div>
-
                     <p className="text-zinc-500">
                       Delivery Address
                     </p>
 
-                    <p className="mt-1 whitespace-pre-wrap font-semibold leading-6">
+                    <p className="mt-1 whitespace-pre-wrap break-words font-semibold leading-6">
                       {order.deliveryAddress ||
                         "Not available"}
                     </p>
-
                   </div>
-
-                  {/* MAP */}
 
                   {order.mapPin && (
                     <a
                       href={order.mapPin}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block font-semibold text-orange-600 hover:text-orange-700"
+                      className="inline-flex max-w-full break-all font-semibold text-orange-600 hover:text-orange-700"
                     >
                       Open Map Pin →
                     </a>
                   )}
-
                 </div>
-
               </div>
-
             </div>
 
-            {/* ========================================
-                PAYMENT SUMMARY
-            ======================================== */}
+            {/* PAYMENT SUMMARY */}
 
-            <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <h2 className="text-2xl font-bold">
+            <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-9">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-xl font-bold sm:text-2xl">
                   Payment Summary
                 </h2>
 
                 <span
-                  className={`inline-flex w-fit rounded-full px-4 py-2 text-sm font-bold ${getPaymentStatusClass(
+                  className={`inline-flex w-fit rounded-full px-3 py-2 text-xs font-bold sm:px-4 sm:text-sm ${getPaymentStatusClass(
                     order.paymentStatus
                   )}`}
                 >
@@ -1991,49 +1906,42 @@ export default function TrackOrderClient() {
                     order.paymentStatus
                   )}
                 </span>
-
               </div>
 
               <div className="mt-6 space-y-4">
-
-                <div className="flex justify-between text-sm text-zinc-600">
-
+                <div className="flex items-center justify-between gap-4 text-sm text-zinc-600">
                   <span>
                     Order Total
                   </span>
 
-                  <span className="font-semibold text-zinc-900">
+                  <span className="shrink-0 font-semibold text-zinc-900">
                     ₹
                     {Number(
                       order.grandTotal || 0
                     ).toFixed(2)}
                   </span>
-
                 </div>
 
-                <div className="flex justify-between text-sm text-zinc-600">
-
+                <div className="flex items-center justify-between gap-4 text-sm text-zinc-600">
                   <span>
                     Amount Paid
                   </span>
 
-                  <span className="font-semibold text-green-700">
+                  <span className="shrink-0 font-semibold text-green-700">
                     ₹
                     {Number(
                       order.paidAmount || 0
                     ).toFixed(2)}
                   </span>
-
                 </div>
 
-                <div className="flex justify-between border-t border-zinc-200 pt-4">
-
+                <div className="flex items-center justify-between gap-4 border-t border-zinc-200 pt-4">
                   <span className="font-bold">
                     Remaining Amount
                   </span>
 
                   <span
-                    className={`text-xl font-bold ${
+                    className={`shrink-0 text-lg font-bold sm:text-xl ${
                       Number(
                         order.remainingAmount ??
                           Number(
@@ -2062,9 +1970,7 @@ export default function TrackOrderClient() {
                           )
                     ).toFixed(2)}
                   </span>
-
                 </div>
-
               </div>
 
               {/* PAYMENT HISTORY */}
@@ -2073,13 +1979,11 @@ export default function TrackOrderClient() {
                 order.paymentHistory.length >
                   0 && (
                   <div className="mt-7 border-t border-zinc-200 pt-6">
-
                     <h3 className="font-bold">
                       Payment History
                     </h3>
 
                     <div className="mt-4 divide-y divide-zinc-100">
-
                       {order.paymentHistory.map(
                         (
                           payment,
@@ -2089,9 +1993,7 @@ export default function TrackOrderClient() {
                             key={`${payment.recordedAt}-${index}`}
                             className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                           >
-
                             <div>
-
                               <p className="font-semibold">
                                 ₹
                                 {Number(
@@ -2106,11 +2008,9 @@ export default function TrackOrderClient() {
                                   payment.method
                                 }
                               </p>
-
                             </div>
 
                             <div className="text-sm text-zinc-500 sm:text-right">
-
                               {payment.recordedAt && (
                                 <p>
                                   {formatDateTime(
@@ -2120,52 +2020,41 @@ export default function TrackOrderClient() {
                               )}
 
                               {payment.note && (
-                                <p className="mt-1">
+                                <p className="mt-1 break-words">
                                   {
                                     payment.note
                                   }
                                 </p>
                               )}
-
                             </div>
-
                           </div>
                         )
                       )}
-
                     </div>
-
                   </div>
                 )}
-
             </div>
 
-            {/* ========================================
-                ORDER ITEMS
-            ======================================== */}
+            {/* ORDER ITEMS */}
 
-            <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
-
-              <h2 className="text-2xl font-bold">
+            <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-9">
+              <h2 className="text-xl font-bold sm:text-2xl">
                 Order Items
               </h2>
 
               <div className="mt-6 divide-y divide-zinc-100">
-
                 {order.items?.map(
                   (item, index) => (
                     <div
                       key={`${item.name}-${index}`}
-                      className="flex items-center justify-between gap-5 py-5"
+                      className="flex items-start justify-between gap-4 py-5"
                     >
-
-                      <div>
-
-                        <p className="font-semibold">
+                      <div className="min-w-0">
+                        <p className="break-words font-semibold">
                           {item.name}
                         </p>
 
-                        <p className="mt-1 text-sm text-zinc-500">
+                        <p className="mt-1 break-words text-sm text-zinc-500">
                           {item.quantity}{" "}
                           {item.unit} × ₹
                           {Number(
@@ -2178,133 +2067,109 @@ export default function TrackOrderClient() {
                             Custom Recipe
                           </span>
                         )}
-
                       </div>
 
-                      <p className="font-bold">
+                      <p className="shrink-0 font-bold">
                         ₹
                         {Number(
                           item.totalPrice
                         ).toFixed(2)}
                       </p>
-
                     </div>
                   )
                 )}
-
               </div>
 
               <div className="mt-5 border-t border-zinc-200 pt-5">
-
-                <div className="flex justify-between text-sm text-zinc-600">
-
+                <div className="flex items-center justify-between gap-4 text-sm text-zinc-600">
                   <span>
                     Food Total
                   </span>
 
-                  <span>
+                  <span className="shrink-0">
                     ₹
                     {Number(
                       order.foodTotal || 0
                     ).toFixed(2)}
                   </span>
-
                 </div>
 
-                <div className="mt-2 flex justify-between text-sm text-zinc-600">
-
+                <div className="mt-2 flex items-center justify-between gap-4 text-sm text-zinc-600">
                   <span>
                     Delivery Charge
                   </span>
 
-                  <span>
+                  <span className="shrink-0">
                     ₹
                     {Number(
                       order.deliveryCharge ||
                         0
                     ).toFixed(2)}
                   </span>
-
                 </div>
 
-                <div className="mt-4 flex justify-between border-t border-zinc-200 pt-4">
-
-                  <span className="text-lg font-bold">
+                <div className="mt-4 flex items-center justify-between gap-4 border-t border-zinc-200 pt-4">
+                  <span className="text-base font-bold sm:text-lg">
                     Grand Total
                   </span>
 
-                  <span className="text-2xl font-bold text-orange-600">
+                  <span className="shrink-0 text-xl font-bold text-orange-600 sm:text-2xl">
                     ₹
                     {Number(
                       order.grandTotal || 0
                     ).toFixed(2)}
                   </span>
-
                 </div>
-
               </div>
-
             </div>
 
-            {/* ========================================
-                DELIVERY PERSON
-            ======================================== */}
+            {/* DELIVERY PERSON */}
 
             {order.deliveryPerson && (
-              <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Delivery Person
                 </h2>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
-
                   <div>
-
                     <p className="text-sm text-zinc-500">
                       Name
                     </p>
 
-                    <p className="mt-1 font-semibold">
+                    <p className="mt-1 break-words font-semibold">
                       {order.deliveryPerson
                         .name ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   <div>
-
                     <p className="text-sm text-zinc-500">
                       Phone
                     </p>
 
-                    <p className="mt-1 font-semibold">
+                    <p className="mt-1 break-all font-semibold">
                       {order.deliveryPerson
                         .phone ||
                         "Not available"}
                     </p>
-
                   </div>
-
                 </div>
-
               </div>
             )}
 
-            {/* ========================================
-                CONFIRM ORDER
-            ======================================== */}
+            {/* CONFIRM ORDER */}
 
             {canConfirm && (
-              <div className="rounded-3xl border border-green-200 bg-green-50 p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold text-green-800">
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold text-green-800 sm:text-xl">
                   Confirm Your Order
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-green-700">
-                  Please confirm that the order details are correct.
+                  Please confirm that the order details
+                  are correct.
                 </p>
 
                 <button
@@ -2313,69 +2178,60 @@ export default function TrackOrderClient() {
                     handleConfirmOrder
                   }
                   disabled={confirming}
-                  className="mt-5 rounded-full bg-green-600 px-6 py-3 font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-5 w-full rounded-full bg-green-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-base"
                 >
                   {confirming
                     ? "Confirming..."
                     : "Confirm Order"}
                 </button>
-
               </div>
             )}
 
-            {/* ========================================
-                CUSTOMER CONFIRMED
-            ======================================== */}
+            {/* CUSTOMER CONFIRMED */}
 
             {order.customerConfirmed && (
-              <div className="rounded-3xl border border-green-200 bg-green-50 p-7">
-
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-5 sm:rounded-3xl sm:p-7">
                 <p className="font-bold text-green-800">
                   ✓ You have confirmed this order.
                 </p>
 
                 {order.customerConfirmedAt && (
-                  <p className="mt-1 text-sm text-green-700">
+                  <p className="mt-1 text-sm leading-6 text-green-700">
                     Confirmed{" "}
                     {formatDateTime(
                       order.customerConfirmedAt
                     )}
                   </p>
                 )}
-
               </div>
             )}
 
-            {/* ========================================
-                CHANGE REQUEST
-            ======================================== */}
+            {/* CHANGE REQUEST */}
 
             {canRequestChange && (
-              <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Request an Order Change
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  Need to change something? Send Sparsha Kitchen a message.
+                  Need to change something? Send Sparsha
+                  Kitchen a message.
                 </p>
 
                 {order.changeRequested && (
-                  <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm">
-
+                  <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm leading-6">
                     <p className="font-semibold text-orange-700">
                       Change request already submitted.
                     </p>
 
                     {order.changeRequestMessage && (
-                      <p className="mt-1 text-zinc-600">
+                      <p className="mt-1 break-words text-zinc-600">
                         {
                           order.changeRequestMessage
                         }
                       </p>
                     )}
-
                   </div>
                 )}
 
@@ -2386,7 +2242,6 @@ export default function TrackOrderClient() {
                     }
                     className="mt-5"
                   >
-
                     <textarea
                       rows={4}
                       value={changeMessage}
@@ -2396,7 +2251,7 @@ export default function TrackOrderClient() {
                         )
                       }
                       placeholder="Example: Please change the delivery time to 6 PM."
-                      className="w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="w-full resize-none rounded-xl border border-zinc-300 px-3 py-3 text-sm leading-6 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                     />
 
                     <button
@@ -2404,32 +2259,28 @@ export default function TrackOrderClient() {
                       disabled={
                         requestingChange
                       }
-                      className="mt-4 rounded-full bg-orange-600 px-6 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-4 w-full rounded-full bg-orange-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-base"
                     >
                       {requestingChange
                         ? "Sending..."
                         : "Request Change"}
                     </button>
-
                   </form>
                 )}
-
               </div>
             )}
 
-            {/* ========================================
-                CANCELLATION
-            ======================================== */}
+            {/* CANCELLATION */}
 
             {canRequestCancellation && (
-              <div className="rounded-3xl border border-red-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Request Cancellation
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  If you no longer need this order, you can send a cancellation request.
+                  If you no longer need this order, you
+                  can send a cancellation request.
                 </p>
 
                 <form
@@ -2438,7 +2289,6 @@ export default function TrackOrderClient() {
                   }
                   className="mt-5"
                 >
-
                   <textarea
                     rows={3}
                     value={
@@ -2450,7 +2300,7 @@ export default function TrackOrderClient() {
                       )
                     }
                     placeholder="Reason for cancellation"
-                    className="w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                    className="w-full resize-none rounded-xl border border-zinc-300 px-3 py-3 text-sm leading-6 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 sm:px-4 sm:text-base"
                   />
 
                   <button
@@ -2458,91 +2308,75 @@ export default function TrackOrderClient() {
                     disabled={
                       requestingCancellation
                     }
-                    className="mt-4 rounded-full border border-red-200 bg-red-50 px-6 py-3 font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-4 w-full rounded-full border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-base"
                   >
                     {requestingCancellation
                       ? "Sending..."
                       : "Request Cancellation"}
                   </button>
-
                 </form>
-
               </div>
             )}
 
-            {/* ========================================
-                CANCELLATION REQUESTED
-            ======================================== */}
+            {/* CANCELLATION REQUESTED */}
 
             {order.cancellationRequested &&
               order.status !==
                 "CANCELLED" && (
-                <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-7">
-
+                <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 sm:rounded-3xl sm:p-7">
                   <p className="font-bold text-yellow-800">
                     Cancellation request submitted
                   </p>
 
                   {order.cancellationRequestMessage && (
-                    <p className="mt-2 text-sm text-yellow-700">
+                    <p className="mt-2 break-words text-sm leading-6 text-yellow-700">
                       {
                         order.cancellationRequestMessage
                       }
                     </p>
                   )}
 
-                  <p className="mt-2 text-xs text-yellow-600">
+                  <p className="mt-2 text-xs leading-5 text-yellow-600">
                     Sparsha Kitchen will review your request.
                   </p>
-
                 </div>
               )}
 
-            {/* ========================================
-                ADDITIONAL INSTRUCTIONS
-            ======================================== */}
+            {/* ADDITIONAL INSTRUCTIONS */}
 
             {order.additionalInstructions && (
-              <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
-
-                <h2 className="text-xl font-bold">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-7">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Additional Instructions
                 </h2>
 
-                <p className="mt-3 whitespace-pre-wrap leading-7 text-zinc-600">
+                <p className="mt-3 whitespace-pre-wrap break-words leading-7 text-zinc-600">
                   {
                     order.additionalInstructions
                   }
                 </p>
-
               </div>
             )}
 
-            {/* ========================================
-                BOTTOM BUTTONS
-            ======================================== */}
+            {/* BOTTOM BUTTONS */}
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-
+            <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:justify-center">
               <Link
                 href="/recipes"
-                className="rounded-full bg-orange-600 px-7 py-3 text-center font-semibold text-white hover:bg-orange-700"
+                className="w-full rounded-full bg-orange-600 px-7 py-3 text-center text-sm font-semibold text-white transition hover:bg-orange-700 sm:w-auto sm:text-base"
               >
                 Browse Recipes
               </Link>
 
               <Link
                 href="/custom-recipe"
-                className="rounded-full border border-zinc-200 bg-white px-7 py-3 text-center font-semibold text-zinc-700 hover:bg-zinc-50"
+                className="w-full rounded-full border border-zinc-200 bg-white px-7 py-3 text-center text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto sm:text-base"
               >
                 Request Custom Recipe
               </Link>
-
             </div>
-
           </div>
         )}
-
       </section>
 
       {/* ========================================
@@ -2550,33 +2384,28 @@ export default function TrackOrderClient() {
       ======================================== */}
 
       <footer className="border-t border-orange-100 bg-white">
-
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-sm sm:flex-row sm:items-center sm:justify-between lg:px-8">
-
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-7 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-8 lg:px-8">
           <div>
-
             <div className="font-bold text-orange-600">
               Sparsha Kitchen
             </div>
 
-            <p className="text-zinc-500">
+            <p className="mt-1 text-zinc-500">
               Homemade food, prepared with care.
             </p>
-
           </div>
 
-          <div className="flex gap-6">
-
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link
               href="/"
-              className="text-zinc-600 hover:text-orange-600"
+              className="text-zinc-600 transition hover:text-orange-600"
             >
               Home
             </Link>
 
             <Link
               href="/recipes"
-              className="text-zinc-600 hover:text-orange-600"
+              className="text-zinc-600 transition hover:text-orange-600"
             >
               Recipes
             </Link>
@@ -2587,13 +2416,9 @@ export default function TrackOrderClient() {
             >
               Track Order
             </Link>
-
           </div>
-
         </div>
-
       </footer>
-
     </main>
   );
 }

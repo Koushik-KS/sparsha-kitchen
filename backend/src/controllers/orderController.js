@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const Recipe = require("../models/Recipe");
 const OrderRecovery = require("../models/OrderRecovery");
+const CustomRecipe = require("../models/CustomRecipe");
 
 require("../models/DeliveryPerson");
 
@@ -2020,10 +2021,27 @@ const trackOrderByOrderIdAndPhone =
       }
 
       const normalizedPhone =
-        String(phone).trim();
+        String(phone)
+          .replace(/\D/g, "")
+          .slice(-10);
 
       const normalizedOrderId =
         String(orderId).trim();
+
+      if (
+        normalizedPhone.length !== 10 ||
+        !normalizedOrderId
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please enter a valid Track ID and 10-digit phone number.",
+        });
+      }
+
+      // ==========================================
+      // 1. CHECK NORMAL ORDER FIRST
+      // ==========================================
 
       const order =
         await Order.findOne({
@@ -2042,7 +2060,29 @@ const trackOrderByOrderIdAndPhone =
             "name photos price unit"
           );
 
-      if (!order) {
+      if (order) {
+        return res.status(200).json({
+          success: true,
+
+          order:
+            buildCustomerTrackingOrder(order),
+        });
+      }
+
+      // ==========================================
+      // 2. NO NORMAL ORDER -> CHECK CUSTOM RECIPE
+      // ==========================================
+
+      const customRecipe =
+        await CustomRecipe.findOne({
+          trackId:
+            normalizedOrderId,
+
+          "customer.phone":
+            normalizedPhone,
+        }).lean();
+
+      if (!customRecipe) {
         return res.status(404).json({
           success: false,
           message:
@@ -2050,11 +2090,234 @@ const trackOrderByOrderIdAndPhone =
         });
       }
 
+      // ==========================================
+      // 3. IF APPROVED AND LINKED TO ORDER,
+      //    TRY THE NORMAL ORDER ONE MORE TIME
+      // ==========================================
+
+      if (
+        customRecipe.status === "APPROVED" &&
+        customRecipe.order
+      ) {
+        const approvedOrder =
+          await Order.findById(
+            customRecipe.order
+          )
+            .populate(
+              "deliveryPerson",
+              "name phone whatsapp"
+            )
+            .populate(
+              "items.recipe",
+              "name photos price unit"
+            );
+
+        if (approvedOrder) {
+          return res.status(200).json({
+            success: true,
+
+            order:
+              buildCustomerTrackingOrder(
+                approvedOrder
+              ),
+          });
+        }
+      }
+
+      // ==========================================
+      // 4. PENDING / REJECTED CUSTOM RECIPE
+      // ==========================================
+
+      const customStatus =
+        customRecipe.status === "REJECTED"
+          ? "REJECTED"
+          : "PENDING";
+
+      const customPrice =
+        Number(
+          customRecipe.quotedPrice || 0
+        );
+
+      const customQuantity =
+        Number(
+          customRecipe.quantity || 1
+        );
+
+      const customTrackingOrder = {
+        _id:
+          customRecipe._id,
+
+        orderId:
+          customRecipe.trackId,
+
+        customer: {
+          name:
+            customRecipe.customer?.name ||
+            "",
+
+          phone:
+            customRecipe.customer?.phone ||
+            "",
+
+          email:
+            customRecipe.customer?.email ||
+            "",
+        },
+
+        deliveryAddress:
+          customRecipe.deliveryAddress ||
+          "",
+
+        mapPin:
+          customRecipe.mapPin ||
+          "",
+
+        requestedDeliveryDate:
+          customRecipe.preferredDeliveryDate,
+
+        requestedDeliveryTime:
+          customRecipe.preferredDeliveryTime,
+
+        additionalInstructions:
+          customRecipe.additionalInstructions ||
+          "",
+
+        items: [
+          {
+            name:
+              customRecipe.recipeName ||
+              "Custom Recipe",
+
+            quantity:
+              customQuantity,
+
+            unit:
+              customRecipe.unit ||
+              "kg",
+
+            pricePerUnit:
+              customPrice,
+
+            totalPrice:
+              customPrice > 0
+                ? customPrice * customQuantity
+                : 0,
+
+            isCustomRecipe:
+              true,
+          },
+        ],
+
+        foodTotal:
+          customPrice > 0
+            ? customPrice * customQuantity
+            : 0,
+
+        deliveryCharge: 0,
+
+        grandTotal:
+          customPrice > 0
+            ? customPrice * customQuantity
+            : 0,
+
+        paymentStatus:
+          "UNPAID",
+
+        paidAmount: 0,
+
+        remainingAmount:
+          customPrice > 0
+            ? customPrice * customQuantity
+            : 0,
+
+        paymentHistory: [],
+
+        deliveryPerson: null,
+
+        status:
+          customStatus,
+
+        customerConfirmed: false,
+
+        customerConfirmedAt: null,
+
+        adminConfirmed: false,
+
+        adminConfirmedAt: null,
+
+        changeRequested: false,
+
+        changeRequestMessage: "",
+
+        cancellationRequested: false,
+
+        cancellationRequestMessage: "",
+
+        deliveryOtp: null,
+
+        deliveryOtpVerified: false,
+
+        deliveryOtpExpiresAt: null,
+
+        statusHistory: [
+          {
+            status:
+              customStatus,
+
+            changedBy:
+              customStatus === "REJECTED"
+                ? "admin"
+                : "system",
+
+            note:
+              customStatus === "REJECTED"
+                ? (
+                    customRecipe.adminNote ||
+                    "Custom recipe request was rejected by admin."
+                  )
+                : "Custom recipe request is waiting for admin approval.",
+          },
+        ],
+
+        trackingToken: null,
+
+        confirmationToken: null,
+
+        confirmationTokenExpiresAt: null,
+
+        createdAt:
+          customRecipe.createdAt,
+
+        updatedAt:
+          customRecipe.updatedAt,
+
+        // Extra information for the customer
+        isCustomRecipeRequest: true,
+
+        customRecipeStatus:
+          customRecipe.status,
+
+        recipeName:
+          customRecipe.recipeName,
+
+        description:
+          customRecipe.description || "",
+
+        adminNote:
+          customRecipe.adminNote || "",
+
+        quotedPrice:
+          customPrice,
+
+        orderCreated:
+          Boolean(customRecipe.order),
+      };
+
       return res.status(200).json({
         success: true,
 
         order:
-          buildCustomerTrackingOrder(order),
+          customTrackingOrder,
       });
     } catch (error) {
       console.error(
