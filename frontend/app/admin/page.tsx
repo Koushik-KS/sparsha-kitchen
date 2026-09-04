@@ -414,6 +414,16 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Recipes */}
+            <button
+              type="button"
+              onClick={() => router.push("/admin")}
+              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+            >
+              Recipes
+            </button>
+
+            {/* Orders */}
             <button
               type="button"
               onClick={() => router.push("/admin/orders")}
@@ -422,6 +432,18 @@ export default function AdminPage() {
               Orders
             </button>
 
+            {/* Delivery Team */}
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/admin/delivery-team")
+              }
+              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+            >
+              Delivery Team
+            </button>
+
+            {/* Logout */}
             <button
               type="button"
               onClick={logout}

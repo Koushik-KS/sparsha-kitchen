@@ -147,6 +147,15 @@ const createOrder = async (req, res) => {
 
     const grandTotal = foodTotal + finalDeliveryCharge;
 
+    // ==========================================
+    // GENERATE CUSTOMER-FACING ORDER ID
+    // ==========================================
+
+    const orderId = `SK-${Date.now()}-${crypto
+      .randomBytes(3)
+      .toString("hex")
+      .toUpperCase()}`;
+
     const trackingToken = crypto
       .randomBytes(24)
       .toString("hex");
@@ -160,6 +169,8 @@ const createOrder = async (req, res) => {
     );
 
     const order = await Order.create({
+      orderId,
+
       customer: {
         name: customer.name.trim(),
         phone: customer.phone.trim(),
@@ -1926,6 +1937,102 @@ const handleCancellationRequest =
       });
     }
   };
+
+  // ==========================================
+// ADMIN: CANCEL ORDER DIRECTLY
+// ==========================================
+
+const cancelOrderByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (order.status === "CANCELLED") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is already cancelled",
+      });
+    }
+
+    if (order.status === "DELIVERED") {
+      return res.status(400).json({
+        success: false,
+        message: "Delivered orders cannot be cancelled",
+      });
+    }
+
+    if (order.status === "OUT_FOR_DELIVERY") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Order cannot be cancelled after it is out for delivery",
+      });
+    }
+
+    order.status = "CANCELLED";
+
+    order.cancellationRequested = false;
+    order.cancellationApproved = true;
+    order.cancellationApprovedAt = new Date();
+
+    order.statusHistory.push({
+      status: "CANCELLED",
+      changedBy: "admin",
+      note:
+        note?.trim() ||
+        "Order cancelled directly by admin",
+    });
+
+    await order.save();
+
+    await order.populate(
+      "deliveryPerson",
+      "name phone whatsapp"
+    );
+
+    await order.populate(
+      "items.recipe",
+      "name photos price unit"
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (error) {
+    console.error(
+      "Admin cancel order error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to cancel order",
+    });
+  }
+};
+
+// ==========================================
+// ADMIN: DELETE ORDER
+// ==========================================
+
 const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1961,6 +2068,7 @@ const deleteOrder = async (req, res) => {
     });
   }
 };
+
 // ==========================================
 // EXPORT CONTROLLERS
 // ==========================================
@@ -1978,6 +2086,7 @@ module.exports = {
   trackOrderByOrderIdAndPhone,
   requestOrderCancellation,
   handleCancellationRequest,
+  cancelOrderByAdmin,
   addPayment,
   verifyDeliveryOtp,
   deleteOrder,

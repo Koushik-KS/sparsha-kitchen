@@ -16,6 +16,7 @@ const {
   confirmOrderByAdmin,
   updateOrderStatus,
   handleCancellationRequest,
+  cancelOrderByAdmin,
   addPayment,
   verifyDeliveryOtp,
   deleteOrder,
@@ -142,10 +143,18 @@ router.patch(
 // CANCELLATION
 // ==========================================
 
+// Admin approves/rejects a customer cancellation request
 router.patch(
   "/orders/:id/cancellation",
   protectAdmin,
   handleCancellationRequest
+);
+
+// Admin directly cancels an order
+router.patch(
+  "/orders/:id/cancel",
+  protectAdmin,
+  cancelOrderByAdmin
 );
 
 // ==========================================
@@ -169,6 +178,10 @@ router.patch(
   protectAdmin,
   removeDeliveryPerson
 );
+
+// ==========================================
+// DELETE ORDER
+// ==========================================
 
 router.delete(
   "/orders/:id",

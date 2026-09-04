@@ -8,6 +8,7 @@ const {
   getDeliveryPersonById,
   updateDeliveryPerson,
   deleteDeliveryPerson,
+  permanentlyDeleteDeliveryPerson,
   assignDeliveryPerson,
   removeDeliveryPerson,
 } = require("../controllers/deliveryPersonController");
@@ -46,11 +47,18 @@ router.put(
   updateDeliveryPerson
 );
 
-// Deactivate
+// Deactivate (soft delete)
 router.delete(
   "/:id",
   protectAdmin,
   deleteDeliveryPerson
+);
+
+// Permanently delete
+router.delete(
+  "/:id/permanent",
+  protectAdmin,
+  permanentlyDeleteDeliveryPerson
 );
 
 // Assign to order

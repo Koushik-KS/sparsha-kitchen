@@ -53,8 +53,10 @@ const createDeliveryPerson = async (req, res) => {
 
 const getAllDeliveryPersons = async (req, res) => {
   try {
-    const deliveryPersons = await DeliveryPerson.find()
-      .sort({ isActive: -1, createdAt: -1 });
+    const deliveryPersons = await DeliveryPerson.find().sort({
+      isActive: -1,
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
@@ -211,7 +213,7 @@ const deleteDeliveryPerson = async (req, res) => {
       });
     }
 
-    // Soft delete: keep the record but deactivate it
+    // Soft delete: keep record but make inactive
     deliveryPerson.isActive = false;
 
     await deliveryPerson.save();
@@ -223,6 +225,69 @@ const deleteDeliveryPerson = async (req, res) => {
     });
   } catch (error) {
     console.error("Deactivate delivery person error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// ==========================================
+// ADMIN: PERMANENTLY DELETE DELIVERY PERSON
+// ==========================================
+
+const permanentlyDeleteDeliveryPerson = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery person ID",
+      });
+    }
+
+    const deliveryPerson =
+      await DeliveryPerson.findById(id);
+
+    if (!deliveryPerson) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery person not found",
+      });
+    }
+
+    // Check whether this person is currently assigned
+    // to any order that has not been completed/cancelled.
+    const activeAssignedOrder = await Order.findOne({
+      deliveryPerson: deliveryPerson._id,
+      status: {
+        $nin: ["DELIVERED", "CANCELLED"],
+      },
+    }).select("orderId status");
+
+    if (activeAssignedOrder) {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Cannot delete this delivery person because they are currently assigned to order ${activeAssignedOrder.orderId} (${activeAssignedOrder.status}). Remove the assignment first.`,
+      });
+    }
+
+    // Permanently remove from database.
+    await DeliveryPerson.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Delivery person deleted permanently",
+    });
+  } catch (error) {
+    console.error(
+      "Permanent delete delivery person error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -274,7 +339,11 @@ const assignDeliveryPerson = async (req, res) => {
     }
 
     // Cannot assign to cancelled or delivered orders
-    if (["CANCELLED", "DELIVERED"].includes(order.status)) {
+    if (
+      ["CANCELLED", "DELIVERED"].includes(
+        order.status
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -283,10 +352,11 @@ const assignDeliveryPerson = async (req, res) => {
     }
 
     // Find active delivery person
-    const deliveryPerson = await DeliveryPerson.findOne({
-      _id: deliveryPersonId,
-      isActive: true,
-    });
+    const deliveryPerson =
+      await DeliveryPerson.findOne({
+        _id: deliveryPersonId,
+        isActive: true,
+      });
 
     if (!deliveryPerson) {
       return res.status(404).json({
@@ -313,7 +383,8 @@ const assignDeliveryPerson = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Delivery person assigned successfully",
+      message:
+        "Delivery person assigned successfully",
       order: {
         orderId: order.orderId,
         status: order.status,
@@ -321,7 +392,10 @@ const assignDeliveryPerson = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Assign delivery person error:", error);
+    console.error(
+      "Assign delivery person error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -357,7 +431,8 @@ const removeDeliveryPerson = async (req, res) => {
     if (!order.deliveryPerson) {
       return res.status(400).json({
         success: false,
-        message: "No delivery person is assigned to this order",
+        message:
+          "No delivery person is assigned to this order",
       });
     }
 
@@ -373,7 +448,8 @@ const removeDeliveryPerson = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Delivery person removed successfully",
+      message:
+        "Delivery person removed successfully",
       order: {
         orderId: order.orderId,
         status: order.status,
@@ -381,7 +457,10 @@ const removeDeliveryPerson = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Remove delivery person error:", error);
+    console.error(
+      "Remove delivery person error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -400,6 +479,7 @@ module.exports = {
   getDeliveryPersonById,
   updateDeliveryPerson,
   deleteDeliveryPerson,
+  permanentlyDeleteDeliveryPerson,
   assignDeliveryPerson,
   removeDeliveryPerson,
 };

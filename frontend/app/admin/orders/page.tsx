@@ -112,7 +112,7 @@ type Order = {
   changeRequestMessage?: string;
 
   cancellationRequested: boolean;
-  cancellationRequestMessage?: string;
+  cancellationMessage?: string;
 
   statusHistory: StatusHistory[];
 
@@ -951,10 +951,13 @@ export default function AdminOrdersPage() {
   };
 
   /*
-   * CANCEL ORDER
+   * ADMIN DIRECT CANCEL ORDER
    *
-   * This uses the existing admin cancellation
-   * endpoint and approves cancellation.
+   * This is separate from the customer
+   * cancellation-request workflow.
+   *
+   * Endpoint:
+   * PATCH /api/admin/orders/:id/cancel
    */
   const cancelOrder = async (
     order: Order
@@ -969,12 +972,13 @@ export default function AdminOrdersPage() {
       setError(
         "This order cannot be cancelled at this stage."
       );
+      setMessage("");
       return;
     }
 
     const confirmed =
       window.confirm(
-        `Cancel order ${order.orderId}?\n\nThis action will cancel the order.`
+        `Cancel order ${order.orderId}?\n\nThis will permanently change the order status to CANCELLED.`
       );
 
     if (!confirmed) {
@@ -997,7 +1001,7 @@ export default function AdminOrdersPage() {
       order._id,
       () =>
         fetch(
-          `${API_URL}/admin/orders/${order._id}/cancellation`,
+          `${API_URL}/admin/orders/${order._id}/cancel`,
           {
             method: "PATCH",
             headers: {
@@ -1006,8 +1010,7 @@ export default function AdminOrdersPage() {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              action: "APPROVE",
-              note,
+              note: note.trim(),
             }),
           }
         )
@@ -1029,15 +1032,6 @@ export default function AdminOrdersPage() {
       );
 
     if (!confirmed) {
-      return;
-    }
-
-    const secondConfirm =
-      window.confirm(
-        "Are you absolutely sure? Click OK to permanently delete this order."
-      );
-
-    if (!secondConfirm) {
       return;
     }
 
@@ -1111,7 +1105,7 @@ export default function AdminOrdersPage() {
 
   const handleCancellation = async (
     order: Order,
-    action: "APPROVE" | "REJECT"
+    action: "approve" | "reject"
   ) => {
     const token = getToken();
 
@@ -1122,7 +1116,7 @@ export default function AdminOrdersPage() {
 
     const note =
       window.prompt(
-        action === "APPROVE"
+        action === "approve"
           ? "Optional cancellation note:"
           : "Optional rejection note:"
       ) || "";
@@ -2146,7 +2140,7 @@ export default function AdminOrdersPage() {
 
                               <p className="mt-1 text-sm text-red-700">
                                 {
-                                  order.cancellationRequestMessage ||
+                                  order.cancellationMessage ||
                                   "Customer requested cancellation."
                                 }
                               </p>
@@ -2260,7 +2254,7 @@ export default function AdminOrdersPage() {
                                 onClick={() =>
                                   void handleCancellation(
                                     order,
-                                    "APPROVE"
+                                    "approve"
                                   )
                                 }
                                 className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
@@ -2277,7 +2271,7 @@ export default function AdminOrdersPage() {
                                 onClick={() =>
                                   void handleCancellation(
                                     order,
-                                    "REJECT"
+                                    "reject"
                                   )
                                 }
                                 className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
@@ -2789,7 +2783,7 @@ export default function AdminOrdersPage() {
 
                   <p className="mt-2 text-sm text-red-700">
                     {
-                      selectedOrder.cancellationRequestMessage ||
+                      selectedOrder.cancellationMessage ||
                       "Customer requested cancellation."
                     }
                   </p>
@@ -2804,7 +2798,7 @@ export default function AdminOrdersPage() {
                       onClick={() =>
                         void handleCancellation(
                           selectedOrder,
-                          "APPROVE"
+                          "approve"
                         )
                       }
                       className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
@@ -2821,7 +2815,7 @@ export default function AdminOrdersPage() {
                       onClick={() =>
                         void handleCancellation(
                           selectedOrder,
-                          "REJECT"
+                          "reject"
                         )
                       }
                       className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
