@@ -8,21 +8,65 @@ const features = [
     description:
       "Explore our available homemade recipes and choose what you would like to order.",
     href: "/recipes",
-    icon: "🍲",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className="h-7 w-7"
+      >
+        <path d="M4 3v18" />
+        <path d="M8 3v7a2 2 0 0 1-4 0V3" />
+        <path d="M6 10v11" />
+        <path d="M14 3v18" />
+        <path d="M14 3c3 1 4 3.5 4 6v2h-4" />
+      </svg>
+    ),
   },
   {
     title: "Custom Recipe",
     description:
       "Can't find what you are looking for? Request a custom recipe from Sparsha Kitchen.",
     href: "/custom-recipe",
-    icon: "✨",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className="h-7 w-7"
+      >
+        <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+        <path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16z" />
+      </svg>
+    ),
   },
   {
     title: "Track Order",
     description:
       "Track your order status using your Order ID and registered phone number.",
     href: "/track-order",
-    icon: "📦",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className="h-7 w-7"
+      >
+        <rect
+          x="3"
+          y="5"
+          width="18"
+          height="14"
+          rx="2"
+        />
+        <path d="M3 9h18" />
+        <path d="M7 14h4" />
+        <path d="M15 14h2" />
+      </svg>
+    ),
   },
 ];
 
@@ -36,6 +80,7 @@ export default function Home() {
             <div className="text-2xl font-bold tracking-tight text-orange-600">
               Sparsha Kitchen
             </div>
+
             <div className="text-xs font-medium text-zinc-500">
               Homemade with care
             </div>
@@ -84,8 +129,22 @@ export default function Home() {
       <section className="relative overflow-hidden bg-orange-50">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:px-8 lg:py-28">
           <div>
-            <div className="mb-5 inline-flex rounded-full bg-orange-100 px-4 py-2 text-sm font-semibold text-orange-700">
-              🍴 Fresh • Homemade • Made with Care
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-2 text-sm font-semibold text-orange-700">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M7 3v8" />
+                <path d="M4 3v5a3 3 0 0 0 6 0V3" />
+                <path d="M7 11v10" />
+                <path d="M17 3v18" />
+                <path d="M17 3c2.2 1.1 3 3.1 3 5.5V10h-3" />
+              </svg>
+
+              Fresh • Homemade • Made with Care
             </div>
 
             <h1 className="max-w-3xl text-5xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-6xl">
@@ -96,9 +155,9 @@ export default function Home() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600">
-              Welcome to Sparsha Kitchen. Discover homemade recipes,
-              request something special, and get your food prepared
-              with care.
+              Welcome to Sparsha Kitchen. Discover
+              homemade recipes, request something special,
+              and get your food prepared with care.
             </p>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -118,20 +177,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* HERO FOOD CARD */}
+          {/* HERO FOOD IMAGE */}
           <div className="relative">
-            <div className="mx-auto flex aspect-square max-w-lg items-center justify-center rounded-[3rem] bg-white p-8 shadow-xl shadow-orange-100">
-              <div className="flex h-full w-full flex-col items-center justify-center rounded-[2.5rem] bg-orange-100">
-                <div className="text-8xl">🍛</div>
-
-                <h2 className="mt-6 text-2xl font-bold text-zinc-900">
-                  Homemade Goodness
-                </h2>
-
-                <p className="mt-2 max-w-xs text-center text-zinc-600">
-                  Food prepared fresh for your order.
-                </p>
-              </div>
+            <div className="mx-auto flex aspect-square max-w-lg items-center justify-center overflow-hidden rounded-[3rem] bg-white shadow-xl shadow-orange-100">
+              <img
+                src="/demo.png"
+                alt="Sparsha Kitchen homemade food"
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         </div>
@@ -150,8 +203,8 @@ export default function Home() {
             </h2>
 
             <p className="mt-4 text-zinc-600">
-              Choose a recipe, request something custom, or track
-              your existing order.
+              Choose a recipe, request something custom, or
+              track your existing order.
             </p>
           </div>
 
@@ -162,7 +215,7 @@ export default function Home() {
                 href={feature.href}
                 className="group rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg"
               >
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-3xl">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
                   {feature.icon}
                 </div>
 
@@ -197,9 +250,9 @@ export default function Home() {
               </h2>
 
               <p className="mt-4 leading-7 text-orange-50">
-                Tell us what you want, choose your quantity and
-                preferred delivery time, and our team will contact
-                you with a quote.
+                Tell us what you want, choose your quantity
+                and preferred delivery time, and our team
+                will contact you with a quote.
               </p>
             </div>
 
@@ -216,15 +269,34 @@ export default function Home() {
       {/* TRACK ORDER */}
       <section className="bg-zinc-50 px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="text-5xl">📦</div>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-7 w-7"
+            >
+              <rect
+                x="3"
+                y="5"
+                width="18"
+                height="14"
+                rx="2"
+              />
+              <path d="M3 9h18" />
+              <path d="M7 14h4" />
+              <path d="M15 14h2" />
+            </svg>
+          </div>
 
           <h2 className="mt-5 text-3xl font-bold text-zinc-900">
             Already placed an order?
           </h2>
 
           <p className="mx-auto mt-4 max-w-xl leading-7 text-zinc-600">
-            Check your order status anytime using your Order ID
-            and phone number.
+            Check your order status anytime using your
+            Order ID and phone number.
           </p>
 
           <Link
