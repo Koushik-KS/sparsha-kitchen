@@ -1,6 +1,12 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = "http://localhost:5000/api";
@@ -25,6 +31,12 @@ type RecipeResponse = {
   recipes?: Recipe[];
 };
 
+type UploadResponse = {
+  success: boolean;
+  message?: string;
+  imageUrl?: string;
+};
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -32,10 +44,14 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(
+    null
+  );
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -44,6 +60,8 @@ export default function AdminPage() {
   const [unit, setUnit] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
   const [isActive, setIsActive] = useState(true);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const getToken = useCallback(() => {
     return localStorage.getItem("adminToken");
@@ -67,15 +85,19 @@ export default function AdminPage() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/admin/recipes`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `${API_URL}/admin/recipes`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        }
+      );
 
-      const data: RecipeResponse = await response.json();
+      const data: RecipeResponse =
+        await response.json();
 
       if (response.status === 401) {
         logout();
@@ -90,7 +112,10 @@ export default function AdminPage() {
 
       setRecipes(data.recipes || []);
     } catch (err) {
-      console.error("Fetch admin recipes error:", err);
+      console.error(
+        "Fetch admin recipes error:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -121,6 +146,101 @@ export default function AdminPage() {
     setUnit("");
     setIsAvailable(true);
     setIsActive(true);
+  };
+
+  // ==========================================
+  // IMAGE UPLOAD
+  // ==========================================
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setUploadingImage(true);
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      setUploadingImage(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+
+      formData.append("image", file);
+
+      const response = await fetch(
+        `${API_URL}/admin/upload-image`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data: UploadResponse =
+        await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            "Unable to upload image."
+        );
+      }
+
+      if (!data.imageUrl) {
+        throw new Error(
+          "Image uploaded but URL was not returned."
+        );
+      }
+
+      setPhotos((currentPhotos) => {
+        const existingPhotos = currentPhotos
+          .split("\n")
+          .map((photo) => photo.trim())
+          .filter(Boolean);
+
+        return [...existingPhotos, data.imageUrl!].join(
+          "\n"
+        );
+      });
+
+      setMessage(
+        "Photo uploaded successfully. URL added automatically."
+      );
+    } catch (err) {
+      console.error(
+        "Upload image error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to upload image."
+      );
+    } finally {
+      setUploadingImage(false);
+
+      // Allow selecting the same image again
+      event.target.value = "";
+    }
   };
 
   const handleSubmit = async (
@@ -225,7 +345,10 @@ export default function AdminPage() {
 
       await fetchRecipes();
     } catch (err) {
-      console.error("Save recipe error:", err);
+      console.error(
+        "Save recipe error:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -244,7 +367,9 @@ export default function AdminPage() {
     setEditingId(recipe._id);
     setName(recipe.name);
     setDescription(recipe.description || "");
-    setPhotos((recipe.photos || []).join("\n"));
+    setPhotos(
+      (recipe.photos || []).join("\n")
+    );
     setPrice(String(recipe.price));
     setUnit(recipe.unit);
     setIsAvailable(recipe.isAvailable);
@@ -256,7 +381,9 @@ export default function AdminPage() {
     });
   };
 
-  const handleDelete = async (recipe: Recipe) => {
+  const handleDelete = async (
+    recipe: Recipe
+  ) => {
     const confirmed = window.confirm(
       `Delete "${recipe.name}"? This action cannot be undone.`
     );
@@ -296,7 +423,8 @@ export default function AdminPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to delete recipe."
+          data.message ||
+            "Unable to delete recipe."
         );
       }
 
@@ -305,12 +433,16 @@ export default function AdminPage() {
       }
 
       setMessage(
-        data.message || "Recipe deleted successfully."
+        data.message ||
+          "Recipe deleted successfully."
       );
 
       await fetchRecipes();
     } catch (err) {
-      console.error("Delete recipe error:", err);
+      console.error(
+        "Delete recipe error:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -360,12 +492,14 @@ export default function AdminPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to update recipe."
+          data.message ||
+            "Unable to update recipe."
         );
       }
 
       setMessage(
-        data.message || "Recipe updated successfully."
+        data.message ||
+          "Recipe updated successfully."
       );
 
       await fetchRecipes();
@@ -414,36 +548,38 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Recipes */}
             <button
               type="button"
-              onClick={() => router.push("/admin")}
+              onClick={() =>
+                router.push("/admin")
+              }
               className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
             >
               Recipes
             </button>
 
-            {/* Orders */}
             <button
               type="button"
-              onClick={() => router.push("/admin/orders")}
+              onClick={() =>
+                router.push("/admin/orders")
+              }
               className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
             >
               Orders
             </button>
 
-            {/* Delivery Team */}
             <button
               type="button"
               onClick={() =>
-                router.push("/admin/delivery-team")
+                router.push(
+                  "/admin/delivery-team"
+                )
               }
               className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
             >
               Delivery Team
             </button>
 
-            {/* Logout */}
             <button
               type="button"
               onClick={logout}
@@ -466,9 +602,9 @@ export default function AdminPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-zinc-600">
-            Create, update, activate, deactivate, and
-            remove recipes displayed on the Sparsha
-            Kitchen website.
+            Create, update, activate, deactivate,
+            and remove recipes displayed on the
+            Sparsha Kitchen website.
           </p>
         </div>
 
@@ -488,7 +624,9 @@ export default function AdminPage() {
           <div className="h-fit rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
             <div>
               <p className="font-semibold uppercase tracking-wide text-orange-600">
-                {editingId ? "Edit Recipe" : "Add Recipe"}
+                {editingId
+                  ? "Edit Recipe"
+                  : "Add Recipe"}
               </p>
 
               <h2 className="mt-2 text-2xl font-bold">
@@ -515,7 +653,9 @@ export default function AdminPage() {
                   type="text"
                   value={name}
                   onChange={(event) =>
-                    setName(event.target.value)
+                    setName(
+                      event.target.value
+                    )
                   }
                   placeholder="Example: Chicken Biryani"
                   className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -535,34 +675,69 @@ export default function AdminPage() {
                   rows={4}
                   value={description}
                   onChange={(event) =>
-                    setDescription(event.target.value)
+                    setDescription(
+                      event.target.value
+                    )
                   }
                   placeholder="Describe the recipe..."
                   className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
+              {/* PHOTO URLS + SMALL CAMERA ICON */}
               <div>
-                <label
-                  htmlFor="photos"
-                  className="block text-sm font-semibold"
-                >
-                  Photo URLs
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="photos"
+                    className="block text-sm font-semibold"
+                  >
+                    Photo URLs
+                  </label>
+
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={
+                        handleImageUpload
+                      }
+                      className="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        fileInputRef.current?.click()
+                      }
+                      disabled={uploadingImage}
+                      title="Upload photo"
+                      aria-label="Upload photo"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-lg transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {uploadingImage
+                        ? "⏳"
+                        : "📷"}
+                    </button>
+                  </div>
+                </div>
 
                 <textarea
                   id="photos"
                   rows={3}
                   value={photos}
                   onChange={(event) =>
-                    setPhotos(event.target.value)
+                    setPhotos(
+                      event.target.value
+                    )
                   }
                   placeholder="One image URL per line"
                   className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
 
                 <p className="mt-2 text-xs text-zinc-500">
-                  Add one image URL per line.
+                  Add one image URL per line or
+                  click 📷 to upload.
                 </p>
               </div>
 
@@ -582,7 +757,9 @@ export default function AdminPage() {
                     step="0.01"
                     value={price}
                     onChange={(event) =>
-                      setPrice(event.target.value)
+                      setPrice(
+                        event.target.value
+                      )
                     }
                     placeholder="0.00"
                     className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -602,7 +779,9 @@ export default function AdminPage() {
                     type="text"
                     value={unit}
                     onChange={(event) =>
-                      setUnit(event.target.value)
+                      setUnit(
+                        event.target.value
+                      )
                     }
                     placeholder="kg / plate / box"
                     className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -649,7 +828,9 @@ export default function AdminPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={
+                    saving || uploadingImage
+                  }
                   className="flex-1 rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving
@@ -663,7 +844,10 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    disabled={saving}
+                    disabled={
+                      saving ||
+                      uploadingImage
+                    }
                     className="rounded-full border border-zinc-200 px-6 py-3.5 font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
                   >
                     Cancel
@@ -690,7 +874,9 @@ export default function AdminPage() {
 
               <button
                 type="button"
-                onClick={() => void fetchRecipes()}
+                onClick={() =>
+                  void fetchRecipes()
+                }
                 disabled={loading}
                 className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
               >
@@ -708,15 +894,17 @@ export default function AdminPage() {
               </div>
             ) : recipes.length === 0 ? (
               <div className="rounded-3xl border border-orange-100 bg-white p-12 text-center shadow-sm">
-                <div className="text-6xl">🍲</div>
+                <div className="text-6xl">
+                  🍲
+                </div>
 
                 <h3 className="mt-5 text-xl font-bold">
                   No recipes yet
                 </h3>
 
                 <p className="mt-2 text-sm text-zinc-500">
-                  Create your first recipe using the
-                  form.
+                  Create your first recipe using
+                  the form.
                 </p>
               </div>
             ) : (
@@ -761,7 +949,9 @@ export default function AdminPage() {
 
                           {recipe.description && (
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-                              {recipe.description}
+                              {
+                                recipe.description
+                              }
                             </p>
                           )}
 
@@ -774,13 +964,16 @@ export default function AdminPage() {
                             </span>
 
                             <span className="text-zinc-500">
-                              per {recipe.unit}
+                              per{" "}
+                              {recipe.unit}
                             </span>
 
                             <span className="text-zinc-400">
-                              {recipe.photos?.length || 0}{" "}
+                              {recipe.photos
+                                ?.length || 0}{" "}
                               photo
-                              {recipe.photos?.length === 1
+                              {recipe.photos
+                                ?.length === 1
                                 ? ""
                                 : "s"}
                             </span>
@@ -791,7 +984,9 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              handleEdit(recipe)
+                              handleEdit(
+                                recipe
+                              )
                             }
                             className="rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
                           >
@@ -801,7 +996,9 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              void handleDelete(recipe)
+                              void handleDelete(
+                                recipe
+                              )
                             }
                             className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
                           >

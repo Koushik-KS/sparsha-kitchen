@@ -184,6 +184,27 @@ const NEXT_STATUS_LABEL: Partial<
   READY: "Send for Delivery",
 };
 
+const getWhatsAppUrl = (phone: string) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  // Customer phone numbers are expected to be 10 digits in India.
+  // Add India country code automatically for WhatsApp.
+  const whatsappNumber =
+    digits.length === 10
+      ? `91${digits}`
+      : digits.startsWith("91")
+        ? digits
+        : digits;
+
+const message = encodeURIComponent(
+  "*Welcome to Sparsha Kitchen! 🍽️*\n\n" +
+  "Thank you for choosing Sparsha Kitchen. We’re delighted to serve you with fresh, delicious, and homestyle food prepared with care.\n\n" +
+  "We look forward to serving you again! ❤️"
+);
+
+return `https://api.whatsapp.com/send/?phone=${whatsappNumber}&text=${message}&type=phone_number&app_absent=0`;
+};
+
 export default function AdminOrdersPage() {
   const router = useRouter();
 
@@ -2038,15 +2059,32 @@ export default function AdminOrdersPage() {
                               }
                             </div>
 
-                            <div>
-                              <span className="font-semibold">
-                                Phone:
-                              </span>{" "}
-                              {
-                                order
-                                  .customer
-                                  .phone
-                              }
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>
+                                <span className="font-semibold">
+                                  Phone:
+                                </span>{" "}
+                                {
+                                  order
+                                    .customer
+                                    .phone
+                                }
+                              </span>
+
+                              {order.customer.phone && (
+                                <a
+                                  href={getWhatsAppUrl(
+                                    order.customer.phone
+                                  )}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                                  title="Open WhatsApp chat"
+                                >
+                                  <span aria-hidden="true">🟢</span>
+                                  WhatsApp
+                                </a>
+                              )}
                             </div>
 
                             <div>
@@ -2451,15 +2489,32 @@ export default function AdminOrdersPage() {
                     }
                   </p>
 
-                  <p className="mt-2">
-                    <span className="font-semibold">
-                      Phone:
-                    </span>{" "}
-                    {
-                      selectedOrder
-                        .customer.phone
-                    }
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <p>
+                      <span className="font-semibold">
+                        Phone:
+                      </span>{" "}
+                      {
+                        selectedOrder
+                          .customer.phone
+                      }
+                    </p>
+
+                    {selectedOrder.customer.phone && (
+                      <a
+                        href={getWhatsAppUrl(
+                          selectedOrder.customer.phone
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                        title="Open WhatsApp chat"
+                      >
+                        <span aria-hidden="true">🟢</span>
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
 
                   {selectedOrder
                     .customer.email && (

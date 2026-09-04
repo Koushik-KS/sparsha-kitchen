@@ -130,8 +130,11 @@ export default function RecipeDetailsPage({
       return;
     }
 
-    if (!phone.trim()) {
-      setError("Please enter your phone number.");
+    // 10 DIGIT PHONE VALIDATION
+    if (!/^\d{10}$/.test(phone)) {
+      setError(
+        "Please enter a valid 10-digit phone number."
+      );
       return;
     }
 
@@ -476,7 +479,8 @@ export default function RecipeDetailsPage({
           <div>
             <div className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm">
               <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-orange-100">
-                {recipe.photos && recipe.photos.length > 0 ? (
+                {recipe.photos &&
+                recipe.photos.length > 0 ? (
                   <img
                     src={recipe.photos[0]}
                     alt={recipe.name}
@@ -615,13 +619,20 @@ export default function RecipeDetailsPage({
                         Phone Number *
                       </label>
 
+                      {/* 10 DIGIT PHONE INPUT */}
                       <input
                         id="phone"
                         type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
                         required
                         value={phone}
                         onChange={(event) =>
-                          setPhone(event.target.value)
+                          setPhone(
+                            event.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 10)
+                          )
                         }
                         placeholder="Your phone number"
                         className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
