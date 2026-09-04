@@ -130,7 +130,6 @@ export default function RecipeDetailsPage({
       return;
     }
 
-    // 10 DIGIT PHONE VALIDATION
     if (!/^\d{10}$/.test(phone)) {
       setError(
         "Please enter a valid 10-digit phone number."
@@ -236,23 +235,23 @@ export default function RecipeDetailsPage({
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-orange-50">
+      <main className="min-h-screen overflow-x-hidden bg-orange-50">
         <header className="border-b border-orange-100 bg-white">
-          <div className="mx-auto max-w-7xl px-6 py-5 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             <Link
               href="/"
-              className="text-2xl font-bold text-orange-600"
+              className="text-xl font-bold text-orange-600 sm:text-2xl"
             >
               Sparsha Kitchen
             </Link>
           </div>
         </header>
 
-        <div className="flex min-h-[70vh] items-center justify-center">
+        <div className="flex min-h-[70vh] items-center justify-center px-4">
           <div className="text-center">
             <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600" />
 
-            <p className="mt-5 text-zinc-600">
+            <p className="mt-5 text-sm text-zinc-600 sm:text-base">
               Loading recipe...
             </p>
           </div>
@@ -267,32 +266,34 @@ export default function RecipeDetailsPage({
 
   if (error && !recipe) {
     return (
-      <main className="min-h-screen bg-orange-50">
+      <main className="min-h-screen overflow-x-hidden bg-orange-50">
         <header className="border-b border-orange-100 bg-white">
-          <div className="mx-auto max-w-7xl px-6 py-5 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             <Link
               href="/"
-              className="text-2xl font-bold text-orange-600"
+              className="text-xl font-bold text-orange-600 sm:text-2xl"
             >
               Sparsha Kitchen
             </Link>
           </div>
         </header>
 
-        <div className="mx-auto max-w-xl px-6 py-24 text-center">
-          <div className="text-6xl">🍲</div>
+        <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6 sm:py-24">
+          <div className="text-5xl sm:text-6xl">
+            🍲
+          </div>
 
-          <h1 className="mt-6 text-3xl font-bold">
+          <h1 className="mt-6 text-2xl font-bold sm:text-3xl">
             Recipe not found
           </h1>
 
-          <p className="mt-3 text-zinc-600">
+          <p className="mt-3 break-words text-sm leading-6 text-zinc-600 sm:text-base">
             {error}
           </p>
 
           <Link
             href="/recipes"
-            className="mt-7 inline-block rounded-full bg-orange-600 px-6 py-3 font-semibold text-white hover:bg-orange-700"
+            className="mt-7 inline-flex w-full items-center justify-center rounded-full bg-orange-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-orange-700 sm:w-auto sm:text-base"
           >
             Back to Recipes
           </Link>
@@ -311,95 +312,95 @@ export default function RecipeDetailsPage({
 
   if (success) {
     return (
-      <main className="min-h-screen bg-orange-50 text-zinc-900">
+      <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
         <header className="border-b border-orange-100 bg-white">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             <Link
               href="/"
-              className="text-2xl font-bold text-orange-600"
+              className="min-w-0 truncate text-xl font-bold text-orange-600 sm:text-2xl"
             >
               Sparsha Kitchen
             </Link>
 
             <Link
               href="/track-order"
-              className="rounded-full bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
+              className="shrink-0 rounded-full bg-orange-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-700 sm:px-5 sm:text-sm"
             >
               Track Order
             </Link>
           </div>
         </header>
 
-        <section className="mx-auto max-w-3xl px-6 py-20">
-          <div className="rounded-3xl border border-green-200 bg-white p-8 text-center shadow-sm sm:p-12">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-4xl">
+        <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-20">
+          <div className="rounded-2xl border border-green-200 bg-white p-5 text-center shadow-sm sm:rounded-3xl sm:p-12">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl sm:h-20 sm:w-20 sm:text-4xl">
               ✓
             </div>
 
-            <p className="mt-7 font-semibold uppercase tracking-wide text-green-600">
+            <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-green-600 sm:mt-7">
               Order Request Received
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
+            <h1 className="mt-3 break-words text-2xl font-bold sm:text-4xl">
               Thank you, {name}!
             </h1>
 
-            <p className="mt-4 leading-7 text-zinc-600">
+            <p className="mt-4 text-sm leading-6 text-zinc-600 sm:text-base sm:leading-7">
               Your order request has been received.
               Sparsha Kitchen will contact you for
               confirmation.
             </p>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-orange-50 p-5">
-                <div className="text-sm text-zinc-500">
+            <div className="mt-7 grid gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4">
+              <div className="min-w-0 rounded-2xl bg-orange-50 p-4 sm:p-5">
+                <div className="text-xs text-zinc-500 sm:text-sm">
                   Order ID
                 </div>
 
-                <div className="mt-1 text-xl font-bold text-orange-600">
+                <div className="mt-1 break-all text-lg font-bold text-orange-600 sm:text-xl">
                   {success.orderId}
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-orange-50 p-5">
-                <div className="text-sm text-zinc-500">
+              <div className="rounded-2xl bg-orange-50 p-4 sm:p-5">
+                <div className="text-xs text-zinc-500 sm:text-sm">
                   Status
                 </div>
 
-                <div className="mt-1 font-bold text-zinc-900">
+                <div className="mt-1 break-words font-bold text-zinc-900">
                   {success.status}
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-zinc-200 p-5">
-              <div className="text-sm text-zinc-500">
+            <div className="mt-4 rounded-2xl border border-zinc-200 p-4 sm:mt-6 sm:p-5">
+              <div className="text-xs text-zinc-500 sm:text-sm">
                 Total
               </div>
 
-              <div className="mt-1 text-2xl font-bold">
+              <div className="mt-1 text-xl font-bold sm:text-2xl">
                 ₹{Number(success.grandTotal).toFixed(2)}
               </div>
             </div>
 
-            <p className="mt-6 text-sm leading-6 text-zinc-500">
+            <p className="mt-5 text-xs leading-5 text-zinc-500 sm:mt-6 sm:text-sm sm:leading-6">
               Keep your Order ID and phone number
               available to track your order.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:justify-center">
               <Link
                 href={`/track-order?orderId=${encodeURIComponent(
                   success.orderId
                 )}`}
-                className="rounded-full bg-orange-600 px-7 py-3 font-semibold text-white hover:bg-orange-700"
+                className="inline-flex w-full items-center justify-center rounded-full bg-orange-600 px-7 py-3 text-sm font-semibold text-white transition hover:bg-orange-700 sm:w-auto sm:text-base"
               >
                 Track Order
               </Link>
 
               <Link
                 href="/recipes"
-                className="rounded-full border border-zinc-200 px-7 py-3 font-semibold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex w-full items-center justify-center rounded-full border border-zinc-200 px-7 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto sm:text-base"
               >
                 Browse More Recipes
               </Link>
@@ -415,21 +416,21 @@ export default function RecipeDetailsPage({
   // ==========================================
 
   return (
-    <main className="min-h-screen bg-orange-50 text-zinc-900">
+    <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
       {/* HEADER */}
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <Link
             href="/"
-            className="text-2xl font-bold tracking-tight text-orange-600"
+            className="min-w-0 truncate text-xl font-bold tracking-tight text-orange-600 sm:text-2xl"
           >
             Sparsha Kitchen
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-6 md:flex lg:gap-8">
             <Link
               href="/"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Home
             </Link>
@@ -443,14 +444,14 @@ export default function RecipeDetailsPage({
 
             <Link
               href="/custom-recipe"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Custom Recipe
             </Link>
 
             <Link
               href="/track-order"
-              className="font-medium text-zinc-700 hover:text-orange-600"
+              className="font-medium text-zinc-700 transition hover:text-orange-600"
             >
               Track Order
             </Link>
@@ -458,26 +459,29 @@ export default function RecipeDetailsPage({
 
           <Link
             href="/custom-recipe"
-            className="rounded-full bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
+            className="shrink-0 rounded-full bg-orange-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-700 sm:px-5 sm:text-sm"
           >
-            Custom Recipe
+            <span className="sm:hidden">Custom</span>
+            <span className="hidden sm:inline">
+              Custom Recipe
+            </span>
           </Link>
         </div>
       </header>
 
       {/* CONTENT */}
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <Link
           href="/recipes"
-          className="inline-flex items-center font-medium text-orange-600 hover:text-orange-700"
+          className="inline-flex items-center text-sm font-medium text-orange-600 transition hover:text-orange-700 sm:text-base"
         >
           ← Back to Recipes
         </Link>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-2">
+        <div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-2 lg:gap-10">
           {/* RECIPE DETAILS */}
-          <div>
-            <div className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm">
+          <div className="min-w-0">
+            <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm sm:rounded-3xl">
               <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-orange-100">
                 {recipe.photos &&
                 recipe.photos.length > 0 ? (
@@ -487,27 +491,29 @@ export default function RecipeDetailsPage({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="text-8xl">🍛</div>
+                  <div className="text-6xl sm:text-8xl">
+                    🍛
+                  </div>
                 )}
               </div>
 
-              <div className="p-7 sm:p-9">
-                <div className="inline-flex rounded-full bg-orange-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-700">
+              <div className="p-5 sm:p-9">
+                <div className="inline-flex rounded-full bg-orange-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-orange-700 sm:text-xs">
                   Homemade Recipe
                 </div>
 
-                <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
+                <h1 className="mt-4 break-words text-3xl font-bold tracking-tight sm:mt-5 sm:text-5xl">
                   {recipe.name}
                 </h1>
 
                 {recipe.description && (
-                  <p className="mt-5 leading-8 text-zinc-600">
+                  <p className="mt-4 break-words text-sm leading-7 text-zinc-600 sm:mt-5 sm:text-base sm:leading-8">
                     {recipe.description}
                   </p>
                 )}
 
-                <div className="mt-8 border-t border-zinc-100 pt-7">
-                  <div className="text-3xl font-bold text-orange-600">
+                <div className="mt-6 border-t border-zinc-100 pt-6 sm:mt-8 sm:pt-7">
+                  <div className="text-2xl font-bold text-orange-600 sm:text-3xl">
                     ₹{Number(recipe.price).toFixed(2)}
                   </div>
 
@@ -517,7 +523,7 @@ export default function RecipeDetailsPage({
                 </div>
 
                 {!recipe.isAvailable && (
-                  <div className="mt-6 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">
+                  <div className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-medium leading-6 text-red-700 sm:mt-6">
                     This recipe is currently unavailable for
                     ordering.
                   </div>
@@ -527,14 +533,14 @@ export default function RecipeDetailsPage({
           </div>
 
           {/* ORDER FORM */}
-          <div>
-            <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
+          <div className="min-w-0">
+            <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-9">
               <div>
-                <p className="font-semibold uppercase tracking-wide text-orange-600">
+                <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">
                   Place Order
                 </p>
 
-                <h2 className="mt-2 text-3xl font-bold">
+                <h2 className="mt-2 break-words text-2xl font-bold sm:text-3xl">
                   Order {recipe.name}
                 </h2>
 
@@ -546,14 +552,14 @@ export default function RecipeDetailsPage({
               </div>
 
               {error && (
-                <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                <div className="mt-5 break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-700 sm:mt-6">
                   {error}
                 </div>
               )}
 
               <form
                 onSubmit={handleSubmit}
-                className="mt-8 space-y-6"
+                className="mt-7 space-y-6 sm:mt-8"
               >
                 {/* QUANTITY */}
                 <div>
@@ -564,7 +570,7 @@ export default function RecipeDetailsPage({
                     Quantity
                   </label>
 
-                  <div className="mt-2 flex items-center gap-3">
+                  <div className="mt-2 flex items-stretch gap-2 sm:gap-3">
                     <input
                       id="quantity"
                       type="number"
@@ -574,10 +580,10 @@ export default function RecipeDetailsPage({
                       onChange={(event) =>
                         setQuantity(event.target.value)
                       }
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="min-w-0 flex-1 rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                     />
 
-                    <div className="min-w-fit rounded-xl bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700">
+                    <div className="flex shrink-0 items-center rounded-xl bg-orange-50 px-3 py-3 text-xs font-medium text-orange-700 sm:px-4 sm:text-sm">
                       {recipe.unit}
                     </div>
                   </div>
@@ -607,7 +613,7 @@ export default function RecipeDetailsPage({
                           setName(event.target.value)
                         }
                         placeholder="Your full name"
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
 
@@ -619,7 +625,6 @@ export default function RecipeDetailsPage({
                         Phone Number *
                       </label>
 
-                      {/* 10 DIGIT PHONE INPUT */}
                       <input
                         id="phone"
                         type="tel"
@@ -635,7 +640,7 @@ export default function RecipeDetailsPage({
                           )
                         }
                         placeholder="Your phone number"
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
 
@@ -658,7 +663,7 @@ export default function RecipeDetailsPage({
                           setEmail(event.target.value)
                         }
                         placeholder="you@example.com"
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
                   </div>
@@ -688,7 +693,7 @@ export default function RecipeDetailsPage({
                           setDeliveryAddress(event.target.value)
                         }
                         placeholder="Enter your complete delivery address"
-                        className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-3 py-3 text-sm leading-6 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
 
@@ -711,12 +716,12 @@ export default function RecipeDetailsPage({
                           setMapPin(event.target.value)
                         }
                         placeholder="Google Maps link or location pin"
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
+                      <div className="min-w-0">
                         <label
                           htmlFor="deliveryDate"
                           className="block text-sm font-semibold"
@@ -737,11 +742,11 @@ export default function RecipeDetailsPage({
                           onChange={(event) =>
                             setDeliveryDate(event.target.value)
                           }
-                          className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                          className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                         />
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <label
                           htmlFor="deliveryTime"
                           className="block text-sm font-semibold"
@@ -757,7 +762,7 @@ export default function RecipeDetailsPage({
                           onChange={(event) =>
                             setDeliveryTime(event.target.value)
                           }
-                          className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                          className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                         />
                       </div>
                     </div>
@@ -783,7 +788,7 @@ export default function RecipeDetailsPage({
                           )
                         }
                         placeholder="Any special instructions for your order?"
-                        className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-3 py-3 text-sm leading-6 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 sm:px-4 sm:text-base"
                       />
                     </div>
                   </div>
@@ -791,13 +796,13 @@ export default function RecipeDetailsPage({
 
                 {/* ORDER SUMMARY */}
                 <div className="border-t border-zinc-100 pt-6">
-                  <div className="rounded-2xl bg-orange-50 p-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-600">
+                  <div className="rounded-2xl bg-orange-50 p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="min-w-0 break-words text-sm text-zinc-600">
                         {recipe.name}
                       </span>
 
-                      <span className="font-semibold">
+                      <span className="shrink-0 text-right text-sm font-semibold">
                         {parsedQuantity > 0
                           ? parsedQuantity
                           : 0}{" "}
@@ -805,27 +810,29 @@ export default function RecipeDetailsPage({
                       </span>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between border-t border-orange-100 pt-3">
+                    <div className="mt-3 flex items-center justify-between gap-4 border-t border-orange-100 pt-3">
                       <span className="font-bold">
                         Food Total
                       </span>
 
-                      <span className="text-xl font-bold text-orange-600">
+                      <span className="shrink-0 text-lg font-bold text-orange-600 sm:text-xl">
                         ₹{totalPrice.toFixed(2)}
                       </span>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between text-sm text-zinc-500">
+                    <div className="mt-2 flex items-center justify-between gap-4 text-sm text-zinc-500">
                       <span>Delivery Charge</span>
-                      <span>₹0.00</span>
+                      <span className="shrink-0">
+                        ₹0.00
+                      </span>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between border-t border-orange-100 pt-3">
+                    <div className="mt-3 flex items-center justify-between gap-4 border-t border-orange-100 pt-3">
                       <span className="font-bold">
                         Grand Total
                       </span>
 
-                      <span className="text-xl font-bold">
+                      <span className="shrink-0 text-lg font-bold sm:text-xl">
                         ₹{totalPrice.toFixed(2)}
                       </span>
                     </div>
@@ -838,7 +845,7 @@ export default function RecipeDetailsPage({
                   disabled={
                     submitting || !recipe.isAvailable
                   }
-                  className="w-full rounded-full bg-orange-600 px-6 py-4 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-full bg-orange-600 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
                 >
                   {submitting
                     ? "Submitting Order..."
@@ -859,20 +866,20 @@ export default function RecipeDetailsPage({
 
       {/* FOOTER */}
       <footer className="border-t border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-7 sm:px-6 sm:py-8 md:flex-row md:items-center md:justify-between lg:px-8">
           <div>
             <div className="font-bold text-orange-600">
               Sparsha Kitchen
             </div>
 
-            <p className="text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-zinc-500">
               Homemade food, prepared with care.
             </p>
           </div>
 
           <Link
             href="/recipes"
-            className="text-sm font-medium text-zinc-600 hover:text-orange-600"
+            className="text-sm font-medium text-zinc-600 transition hover:text-orange-600"
           >
             Back to Recipes
           </Link>
