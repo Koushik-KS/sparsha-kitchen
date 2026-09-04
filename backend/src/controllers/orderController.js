@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 const Order = require("../models/Order");
 const Recipe = require("../models/Recipe");
+const OrderRecovery = require("../models/OrderRecovery");
 
 require("../models/DeliveryPerson");
 
@@ -62,7 +63,10 @@ const createOrder = async (req, res) => {
         });
       }
 
+      // ==========================================
       // CUSTOM RECIPE
+      // ==========================================
+
       if (item.isCustomRecipe) {
         const price = Number(item.customPrice);
 
@@ -89,7 +93,10 @@ const createOrder = async (req, res) => {
         continue;
       }
 
+      // ==========================================
       // REGULAR RECIPE
+      // ==========================================
+
       if (!item.recipeId) {
         return res.status(400).json({
           success: false,
@@ -133,6 +140,10 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // ==========================================
+    // DELIVERY CHARGE
+    // ==========================================
+
     const finalDeliveryCharge = Number(deliveryCharge);
 
     if (
@@ -156,9 +167,17 @@ const createOrder = async (req, res) => {
       .toString("hex")
       .toUpperCase()}`;
 
+    // ==========================================
+    // TRACKING TOKEN
+    // ==========================================
+
     const trackingToken = crypto
       .randomBytes(24)
       .toString("hex");
+
+    // ==========================================
+    // CUSTOMER CONFIRMATION TOKEN
+    // ==========================================
 
     const confirmationToken = crypto
       .randomBytes(24)
@@ -167,6 +186,10 @@ const createOrder = async (req, res) => {
     const confirmationTokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000
     );
+
+    // ==========================================
+    // CREATE ORDER
+    // ==========================================
 
     const order = await Order.create({
       orderId,
@@ -182,6 +205,7 @@ const createOrder = async (req, res) => {
       mapPin: mapPin?.trim() || "",
 
       requestedDeliveryDate,
+
       requestedDeliveryTime,
 
       additionalInstructions:
@@ -195,11 +219,15 @@ const createOrder = async (req, res) => {
 
       grandTotal,
 
+      // PAYMENT
       paymentStatus: "UNPAID",
 
       paidAmount: 0,
 
       paymentHistory: [],
+
+      // DELIVERY OTP
+      deliveryOtp: null,
 
       deliveryOtpHash: null,
 
@@ -209,8 +237,10 @@ const createOrder = async (req, res) => {
 
       deliveryOtpVerifiedAt: null,
 
+      // TRACKING
       trackingToken,
 
+      // CONFIRMATION
       confirmationToken,
 
       confirmationTokenExpiresAt,
@@ -399,11 +429,9 @@ const updateOrder = async (req, res) => {
         customer.email?.trim().toLowerCase() || "",
     };
 
-    order.deliveryAddress =
-      deliveryAddress.trim();
+    order.deliveryAddress = deliveryAddress.trim();
 
-    order.mapPin =
-      mapPin?.trim() || "";
+    order.mapPin = mapPin?.trim() || "";
 
     order.requestedDeliveryDate =
       requestedDeliveryDate;
@@ -413,6 +441,10 @@ const updateOrder = async (req, res) => {
 
     order.additionalInstructions =
       additionalInstructions?.trim() || "";
+
+    // ==========================================
+    // UPDATE ITEMS
+    // ==========================================
 
     if (Array.isArray(items)) {
       if (items.length === 0) {
@@ -534,6 +566,10 @@ const updateOrder = async (req, res) => {
       order.foodTotal = foodTotal;
     }
 
+    // ==========================================
+    // DELIVERY CHARGE
+    // ==========================================
+
     if (deliveryCharge !== undefined) {
       const charge = Number(deliveryCharge);
 
@@ -555,6 +591,10 @@ const updateOrder = async (req, res) => {
       Number(order.foodTotal) +
       Number(order.deliveryCharge);
 
+    // ==========================================
+    // RESET CONFIRMATIONS
+    // ==========================================
+
     order.customerConfirmed = false;
     order.customerConfirmedAt = null;
 
@@ -563,6 +603,20 @@ const updateOrder = async (req, res) => {
 
     order.changeRequested = false;
     order.changeRequestMessage = "";
+
+    // ==========================================
+    // RESET DELIVERY OTP
+    // ==========================================
+
+    order.deliveryOtp = null;
+    order.deliveryOtpHash = null;
+    order.deliveryOtpExpiresAt = null;
+    order.deliveryOtpVerified = false;
+    order.deliveryOtpVerifiedAt = null;
+
+    // ==========================================
+    // NEW CONFIRMATION TOKEN
+    // ==========================================
 
     order.confirmationToken =
       crypto
@@ -711,26 +765,49 @@ const confirmOrderByCustomer = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         customerConfirmed:
           order.customerConfirmed,
+
         customerConfirmedAt:
           order.customerConfirmedAt,
+
         adminConfirmed:
           order.adminConfirmed,
+
         deliveryPerson:
           order.deliveryPerson,
+
+        deliveryAddress:
+          order.deliveryAddress,
+
+        mapPin:
+          order.mapPin,
+
+        requestedDeliveryDate:
+          order.requestedDeliveryDate,
+
+        requestedDeliveryTime:
+          order.requestedDeliveryTime,
+
         foodTotal:
           order.foodTotal,
+
         deliveryCharge:
           order.deliveryCharge,
+
         grandTotal:
           order.grandTotal,
+
         paymentStatus:
           order.paymentStatus,
+
         paidAmount:
           order.paidAmount,
+
         trackingToken:
           order.trackingToken,
       },
@@ -821,10 +898,13 @@ const requestOrderChange = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         changeRequested:
           order.changeRequested,
+
         changeRequestMessage:
           order.changeRequestMessage,
       },
@@ -934,24 +1014,46 @@ const confirmOrderByAdmin = async (
       order: {
         orderId:
           order.orderId,
+
         status:
           order.status,
+
         customerConfirmed:
           order.customerConfirmed,
+
         adminConfirmed:
           order.adminConfirmed,
+
         deliveryPerson:
           order.deliveryPerson,
+
+        deliveryAddress:
+          order.deliveryAddress,
+
+        mapPin:
+          order.mapPin,
+
+        requestedDeliveryDate:
+          order.requestedDeliveryDate,
+
+        requestedDeliveryTime:
+          order.requestedDeliveryTime,
+
         foodTotal:
           order.foodTotal,
+
         deliveryCharge:
           order.deliveryCharge,
+
         grandTotal:
           order.grandTotal,
+
         paymentStatus:
           order.paymentStatus,
+
         paidAmount:
           order.paidAmount,
+
         trackingToken:
           order.trackingToken,
       },
@@ -973,10 +1075,18 @@ const confirmOrderByAdmin = async (
 // ADMIN: ADD PAYMENT
 // ==========================================
 
-const addPayment = async (req, res) => {
+const addPayment = async (
+  req,
+  res
+) => {
   try {
     const { id } = req.params;
-    const { amount, method, note } = req.body;
+
+    const {
+      amount,
+      method,
+      note,
+    } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -985,10 +1095,13 @@ const addPayment = async (req, res) => {
       });
     }
 
-    const paymentAmount = Number(amount);
+    const paymentAmount =
+      Number(amount);
 
     if (
-      !Number.isFinite(paymentAmount) ||
+      !Number.isFinite(
+        paymentAmount
+      ) ||
       paymentAmount <= 0
     ) {
       return res.status(400).json({
@@ -1005,7 +1118,11 @@ const addPayment = async (req, res) => {
       "OTHER",
     ];
 
-    if (!allowedMethods.includes(method)) {
+    if (
+      !allowedMethods.includes(
+        method
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -1023,7 +1140,10 @@ const addPayment = async (req, res) => {
       });
     }
 
-    if (order.status === "CANCELLED") {
+    if (
+      order.status ===
+      "CANCELLED"
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -1032,16 +1152,22 @@ const addPayment = async (req, res) => {
     }
 
     const currentPaidAmount =
-      Number(order.paidAmount || 0);
+      Number(
+        order.paidAmount || 0
+      );
 
     const grandTotal =
-      Number(order.grandTotal || 0);
+      Number(
+        order.grandTotal || 0
+      );
 
     const remainingAmount =
       grandTotal -
       currentPaidAmount;
 
-    if (remainingAmount <= 0) {
+    if (
+      remainingAmount <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -1049,7 +1175,10 @@ const addPayment = async (req, res) => {
       });
     }
 
-    if (paymentAmount > remainingAmount) {
+    if (
+      paymentAmount >
+      remainingAmount
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -1060,11 +1189,18 @@ const addPayment = async (req, res) => {
     }
 
     order.paymentHistory.push({
-      amount: paymentAmount,
+      amount:
+        paymentAmount,
+
       method,
-      recordedAt: new Date(),
+
+      recordedAt:
+        new Date(),
+
       recordedBy:
-        req.admin?.email || "admin",
+        req.admin?.email ||
+        "admin",
+
       note:
         note?.trim() || "",
     });
@@ -1095,8 +1231,10 @@ const addPayment = async (req, res) => {
     order.statusHistory.push({
       status:
         order.status,
+
       changedBy:
         "admin",
+
       note:
         `Payment recorded: ₹${paymentAmount.toFixed(
           2
@@ -1117,21 +1255,28 @@ const addPayment = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       message:
         "Payment added successfully",
+
       order,
+
       payment: {
         amount:
           paymentAmount,
+
         method,
+
         paidAmount:
           order.paidAmount,
+
         remainingAmount:
           Math.max(
             0,
             grandTotal -
               order.paidAmount
           ),
+
         paymentStatus:
           order.paymentStatus,
       },
@@ -1148,7 +1293,6 @@ const addPayment = async (req, res) => {
     });
   }
 };
-
 // ==========================================
 // ADMIN: UPDATE ORDER STATUS
 // ==========================================
@@ -1208,13 +1352,19 @@ const updateOrderStatus = async (
       });
     }
 
-    if (order.status === "DELIVERED") {
+    if (
+      order.status === "DELIVERED"
+    ) {
       return res.status(400).json({
         success: false,
         message:
           "Delivered orders cannot be changed",
       });
     }
+
+    // ==========================================
+    // DELIVERY PERSON REQUIRED
+    // ==========================================
 
     if (
       !order.deliveryPerson &&
@@ -1231,6 +1381,10 @@ const updateOrderStatus = async (
           "Please assign a delivery person before continuing the order.",
       });
     }
+
+    // ==========================================
+    // VALID STATUS TRANSITIONS
+    // ==========================================
 
     const validTransitions = {
       CONFIRMED: [
@@ -1269,7 +1423,9 @@ const updateOrderStatus = async (
     // DELIVERED REQUIREMENTS
     // ==========================================
 
-    if (status === "DELIVERED") {
+    if (
+      status === "DELIVERED"
+    ) {
       if (
         !order.deliveryOtpVerified
       ) {
@@ -1281,8 +1437,12 @@ const updateOrderStatus = async (
       }
 
       if (
-        Number(order.paidAmount || 0) <
-        Number(order.grandTotal || 0)
+        Number(
+          order.paidAmount || 0
+        ) <
+        Number(
+          order.grandTotal || 0
+        )
       ) {
         return res.status(400).json({
           success: false,
@@ -1308,6 +1468,9 @@ const updateOrderStatus = async (
           )
           .toString();
 
+      order.deliveryOtp =
+        otp;
+
       order.deliveryOtpHash =
         crypto
           .createHash("sha256")
@@ -1329,8 +1492,10 @@ const updateOrderStatus = async (
       order.statusHistory.push({
         status:
           "OUT_FOR_DELIVERY",
+
         changedBy:
           "system",
+
         note:
           "Delivery OTP generated for customer",
       });
@@ -1341,8 +1506,10 @@ const updateOrderStatus = async (
       order.statusHistory.push({
         status:
           "OUT_FOR_DELIVERY",
+
         changedBy:
           "admin",
+
         note:
           note?.trim() ||
           "Order sent out for delivery",
@@ -1355,15 +1522,30 @@ const updateOrderStatus = async (
         "name phone whatsapp"
       );
 
+      await order.populate(
+        "items.recipe",
+        "name photos price unit"
+      );
+
       return res.status(200).json({
         success: true,
+
         message:
           "Order is out for delivery. Delivery OTP has been generated.",
+
         order,
+
         deliveryOtpGenerated:
           true,
+
+        deliveryOtp:
+          otp,
       });
     }
+
+    // ==========================================
+    // NORMAL STATUS UPDATE
+    // ==========================================
 
     const previousStatus =
       order.status;
@@ -1373,8 +1555,10 @@ const updateOrderStatus = async (
 
     order.statusHistory.push({
       status,
+
       changedBy:
         "admin",
+
       note:
         note?.trim() ||
         `Order status changed from ${previousStatus} to ${status}`,
@@ -1387,10 +1571,17 @@ const updateOrderStatus = async (
       "name phone whatsapp"
     );
 
+    await order.populate(
+      "items.recipe",
+      "name photos price unit"
+    );
+
     return res.status(200).json({
       success: true,
+
       message:
         `Order status updated to ${status}`,
+
       order,
     });
   } catch (error) {
@@ -1514,6 +1705,9 @@ const verifyDeliveryOtp = async (
     order.deliveryOtpVerifiedAt =
       new Date();
 
+    order.deliveryOtp =
+      null;
+
     order.deliveryOtpHash =
       null;
 
@@ -1523,8 +1717,10 @@ const verifyDeliveryOtp = async (
     order.statusHistory.push({
       status:
         order.status,
+
       changedBy:
         "admin",
+
       note:
         "Delivery OTP verified successfully",
     });
@@ -1536,10 +1732,17 @@ const verifyDeliveryOtp = async (
       "name phone whatsapp"
     );
 
+    await order.populate(
+      "items.recipe",
+      "name photos price unit"
+    );
+
     return res.status(200).json({
       success: true,
+
       message:
         "Delivery OTP verified successfully.",
+
       order,
     });
   } catch (error) {
@@ -1553,6 +1756,188 @@ const verifyDeliveryOtp = async (
       message: "Server error",
     });
   }
+};
+// ==========================================
+// CUSTOMER TRACKING RESPONSE
+// ==========================================
+
+const buildCustomerTrackingOrder = (order) => {
+  const now = new Date();
+
+  const otpIsValid =
+    order.status === "OUT_FOR_DELIVERY" &&
+    !order.deliveryOtpVerified &&
+    order.deliveryOtp &&
+    order.deliveryOtpExpiresAt &&
+    now <= new Date(order.deliveryOtpExpiresAt);
+
+  return {
+    _id: order._id,
+
+    orderId: order.orderId,
+
+    customer: {
+      name: order.customer?.name || "",
+      phone: order.customer?.phone || "",
+      email: order.customer?.email || "",
+    },
+
+    // ==========================================
+    // DELIVERY DETAILS
+    // ==========================================
+
+    deliveryAddress:
+      order.deliveryAddress || "",
+
+    mapPin:
+      order.mapPin || "",
+
+    requestedDeliveryDate:
+      order.requestedDeliveryDate,
+
+    requestedDeliveryTime:
+      order.requestedDeliveryTime,
+
+    additionalInstructions:
+      order.additionalInstructions || "",
+
+    // ==========================================
+    // ITEMS
+    // ==========================================
+
+    items:
+      order.items || [],
+
+    // ==========================================
+    // PRICE
+    // ==========================================
+
+    foodTotal:
+      Number(order.foodTotal || 0),
+
+    deliveryCharge:
+      Number(order.deliveryCharge || 0),
+
+    grandTotal:
+      Number(order.grandTotal || 0),
+
+    // ==========================================
+    // PAYMENT
+    // ==========================================
+
+    paymentStatus:
+      order.paymentStatus || "UNPAID",
+
+    paidAmount:
+      Number(order.paidAmount || 0),
+
+    remainingAmount:
+      Math.max(
+        0,
+        Number(order.grandTotal || 0) -
+          Number(order.paidAmount || 0)
+      ),
+
+    paymentHistory:
+      order.paymentHistory || [],
+
+    // ==========================================
+    // DELIVERY PERSON
+    // ==========================================
+
+    deliveryPerson:
+      order.deliveryPerson || null,
+
+    // ==========================================
+    // STATUS
+    // ==========================================
+
+    status:
+      order.status,
+
+    customerConfirmed:
+      order.customerConfirmed,
+
+    customerConfirmedAt:
+      order.customerConfirmedAt,
+
+    adminConfirmed:
+      order.adminConfirmed,
+
+    adminConfirmedAt:
+      order.adminConfirmedAt,
+
+    // ==========================================
+    // CHANGE REQUEST
+    // ==========================================
+
+    changeRequested:
+      order.changeRequested,
+
+    changeRequestMessage:
+      order.changeRequestMessage || "",
+
+    // ==========================================
+    // CANCELLATION
+    // ==========================================
+
+    cancellationRequested:
+      order.cancellationRequested,
+
+    cancellationRequestMessage:
+      order.cancellationRequestMessage || "",
+
+    // ==========================================
+    // DELIVERY OTP
+    // ==========================================
+
+    deliveryOtp:
+      otpIsValid
+        ? order.deliveryOtp
+        : null,
+
+    deliveryOtpVerified:
+      Boolean(order.deliveryOtpVerified),
+
+    deliveryOtpExpiresAt:
+      otpIsValid
+        ? order.deliveryOtpExpiresAt
+        : null,
+
+    // ==========================================
+    // STATUS HISTORY
+    // ==========================================
+
+    statusHistory:
+      order.statusHistory || [],
+
+    // ==========================================
+    // TRACKING TOKEN
+    // ==========================================
+
+    trackingToken:
+      order.trackingToken,
+
+    // ==========================================
+    // CUSTOMER CONFIRMATION TOKEN
+    // ==========================================
+
+    confirmationToken:
+      order.confirmationToken || null,
+
+    confirmationTokenExpiresAt:
+      order.confirmationTokenExpiresAt || null,
+
+    // ==========================================
+    // TIMESTAMPS
+    // ==========================================
+
+    createdAt:
+      order.createdAt,
+
+    updatedAt:
+      order.updatedAt,
+  };
 };
 
 // ==========================================
@@ -1597,7 +1982,9 @@ const trackOrderByToken = async (
 
     return res.status(200).json({
       success: true,
-      order,
+
+      order:
+        buildCustomerTrackingOrder(order),
     });
   } catch (error) {
     console.error(
@@ -1619,9 +2006,6 @@ const trackOrderByToken = async (
 const trackOrderByOrderIdAndPhone =
   async (req, res) => {
     try {
-      // IMPORTANT:
-      // Frontend uses GET /orders/track?orderId=...&phone=...
-      // Therefore these values come from req.query, NOT req.body.
       const {
         orderId,
         phone,
@@ -1638,10 +2022,14 @@ const trackOrderByOrderIdAndPhone =
       const normalizedPhone =
         String(phone).trim();
 
+      const normalizedOrderId =
+        String(orderId).trim();
+
       const order =
         await Order.findOne({
           orderId:
-            String(orderId).trim(),
+            normalizedOrderId,
+
           "customer.phone":
             normalizedPhone,
         })
@@ -1664,7 +2052,9 @@ const trackOrderByOrderIdAndPhone =
 
       return res.status(200).json({
         success: true,
-        order,
+
+        order:
+          buildCustomerTrackingOrder(order),
       });
     } catch (error) {
       console.error(
@@ -1686,8 +2076,13 @@ const trackOrderByOrderIdAndPhone =
 const requestOrderCancellation =
   async (req, res) => {
     try {
-      const { token } = req.params;
-      const { message } = req.body;
+      const {
+        token,
+      } = req.params;
+
+      const {
+        message,
+      } = req.body;
 
       if (!token) {
         return res.status(400).json({
@@ -1711,9 +2106,10 @@ const requestOrderCancellation =
       }
 
       if (
-        ["CANCELLED", "DELIVERED"].includes(
-          order.status
-        )
+        [
+          "CANCELLED",
+          "DELIVERED",
+        ].includes(order.status)
       ) {
         return res.status(400).json({
           success: false,
@@ -1755,8 +2151,10 @@ const requestOrderCancellation =
       order.statusHistory.push({
         status:
           order.status,
+
         changedBy:
           "customer",
+
         note:
           message?.trim()
             ? `Cancellation requested: ${message.trim()}`
@@ -1767,15 +2165,20 @@ const requestOrderCancellation =
 
       return res.status(200).json({
         success: true,
+
         message:
           "Cancellation request submitted successfully",
+
         order: {
           orderId:
             order.orderId,
+
           status:
             order.status,
+
           cancellationRequested:
             order.cancellationRequested,
+
           cancellationMessage:
             order.cancellationMessage,
         },
@@ -1800,7 +2203,9 @@ const requestOrderCancellation =
 const handleCancellationRequest =
   async (req, res) => {
     try {
-      const { id } = req.params;
+      const {
+        id,
+      } = req.params;
 
       const {
         action,
@@ -1816,9 +2221,10 @@ const handleCancellationRequest =
       }
 
       if (
-        !["approve", "reject"].includes(
-          action
-        )
+        ![
+          "approve",
+          "reject",
+        ].includes(action)
       ) {
         return res.status(400).json({
           success: false,
@@ -1849,9 +2255,10 @@ const handleCancellationRequest =
       }
 
       if (
-        ["CANCELLED", "DELIVERED"].includes(
-          order.status
-        )
+        [
+          "CANCELLED",
+          "DELIVERED",
+        ].includes(order.status)
       ) {
         return res.status(400).json({
           success: false,
@@ -1860,7 +2267,9 @@ const handleCancellationRequest =
         });
       }
 
-      if (action === "approve") {
+      if (
+        action === "approve"
+      ) {
         order.status =
           "CANCELLED";
 
@@ -1876,15 +2285,19 @@ const handleCancellationRequest =
         order.statusHistory.push({
           status:
             "CANCELLED",
+
           changedBy:
             "admin",
+
           note:
             note?.trim() ||
             "Admin approved customer cancellation request",
         });
       }
 
-      if (action === "reject") {
+      if (
+        action === "reject"
+      ) {
         order.cancellationRequested =
           false;
 
@@ -1897,8 +2310,10 @@ const handleCancellationRequest =
         order.statusHistory.push({
           status:
             order.status,
+
           changedBy:
             "admin",
+
           note:
             note?.trim() ||
             "Admin rejected customer cancellation request",
@@ -1919,10 +2334,12 @@ const handleCancellationRequest =
 
       return res.status(200).json({
         success: true,
+
         message:
           action === "approve"
             ? "Cancellation approved successfully"
             : "Cancellation request rejected successfully",
+
         order,
       });
     } catch (error) {
@@ -1937,12 +2354,14 @@ const handleCancellationRequest =
       });
     }
   };
-
   // ==========================================
 // ADMIN: CANCEL ORDER DIRECTLY
 // ==========================================
 
-const cancelOrderByAdmin = async (req, res) => {
+const cancelOrderByAdmin = async (
+  req,
+  res
+) => {
   try {
     const { id } = req.params;
     const { note } = req.body;
@@ -1954,7 +2373,8 @@ const cancelOrderByAdmin = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(id);
+    const order =
+      await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -1963,25 +2383,19 @@ const cancelOrderByAdmin = async (req, res) => {
       });
     }
 
-    if (order.status === "CANCELLED") {
-      return res.status(400).json({
-        success: false,
-        message: "Order is already cancelled",
-      });
-    }
-
     if (order.status === "DELIVERED") {
       return res.status(400).json({
         success: false,
-        message: "Delivered orders cannot be cancelled",
+        message:
+          "Delivered orders cannot be cancelled",
       });
     }
 
-    if (order.status === "OUT_FOR_DELIVERY") {
+    if (order.status === "CANCELLED") {
       return res.status(400).json({
         success: false,
         message:
-          "Order cannot be cancelled after it is out for delivery",
+          "Order is already cancelled",
       });
     }
 
@@ -1989,7 +2403,14 @@ const cancelOrderByAdmin = async (req, res) => {
 
     order.cancellationRequested = false;
     order.cancellationApproved = true;
-    order.cancellationApprovedAt = new Date();
+    order.cancellationApprovedAt =
+      new Date();
+
+    order.deliveryOtp = null;
+    order.deliveryOtpHash = null;
+    order.deliveryOtpExpiresAt = null;
+    order.deliveryOtpVerified = false;
+    order.deliveryOtpVerifiedAt = null;
 
     order.statusHistory.push({
       status: "CANCELLED",
@@ -2013,18 +2434,19 @@ const cancelOrderByAdmin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Order cancelled successfully",
+      message:
+        "Order cancelled successfully",
       order,
     });
   } catch (error) {
     console.error(
-      "Admin cancel order error:",
+      "Cancel order by admin error:",
       error
     );
 
     return res.status(500).json({
       success: false,
-      message: "Unable to cancel order",
+      message: "Server error",
     });
   }
 };
@@ -2033,23 +2455,28 @@ const cancelOrderByAdmin = async (req, res) => {
 // ADMIN: DELETE ORDER
 // ==========================================
 
-const deleteOrder = async (req, res) => {
+const deleteOrder = async (
+  req,
+  res
+) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid order ID.",
+        message: "Invalid order ID",
       });
     }
 
-    const order = await Order.findById(id);
+    const order =
+      await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order not found.",
+        message:
+          "Order not found",
       });
     }
 
@@ -2057,20 +2484,335 @@ const deleteOrder = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Order deleted permanently.",
+      message:
+        "Order deleted successfully",
     });
   } catch (error) {
-    console.error("Delete order error:", error);
+    console.error(
+      "Delete order error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Unable to delete order.",
+      message: "Server error",
     });
   }
 };
 
 // ==========================================
-// EXPORT CONTROLLERS
+// CUSTOMER: REQUEST ORDER ID RECOVERY OTP
+// ==========================================
+
+const requestOrderIdRecovery =
+  async (req, res) => {
+    try {
+      const { phone } = req.body;
+
+      const normalizedPhone =
+        String(phone || "").trim();
+
+      if (!normalizedPhone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number is required",
+        });
+      }
+
+      const orders =
+        await Order.find({
+          "customer.phone":
+            normalizedPhone,
+        })
+          .select(
+            "orderId customer status grandTotal paidAmount paymentStatus createdAt requestedDeliveryDate requestedDeliveryTime"
+          )
+          .sort({
+            createdAt: -1,
+          });
+
+      if (orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "No orders found for this phone number.",
+        });
+      }
+
+      await OrderRecovery.deleteMany({
+        phone: normalizedPhone,
+      });
+
+      const otp =
+        crypto
+          .randomInt(
+            100000,
+            1000000
+          )
+          .toString();
+
+      const otpHash =
+        crypto
+          .createHash("sha256")
+          .update(otp)
+          .digest("hex");
+
+      const otpExpiresAt =
+        new Date(
+          Date.now() +
+            10 * 60 * 1000
+        );
+
+      await OrderRecovery.create({
+        phone:
+          normalizedPhone,
+
+        otpHash,
+
+        otpExpiresAt,
+
+        attempts: 0,
+
+        verified: false,
+      });
+
+      // DEVELOPMENT ONLY:
+      // Replace this with a WhatsApp provider
+      // before production use.
+
+      console.log(
+        `Order ID recovery OTP for ${normalizedPhone}: ${otp}`
+      );
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "OTP generated successfully.",
+
+        // Temporary local-development OTP.
+        // Do NOT keep exposing this in production.
+
+        otp,
+
+        expiresAt:
+          otpExpiresAt,
+      });
+    } catch (error) {
+      console.error(
+        "Request order ID recovery error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  };
+
+// ==========================================
+// CUSTOMER: VERIFY ORDER ID RECOVERY OTP
+// ==========================================
+
+const verifyOrderIdRecovery =
+  async (req, res) => {
+    try {
+      const {
+        phone,
+        otp,
+      } = req.body;
+
+      const normalizedPhone =
+        String(phone || "").trim();
+
+      const normalizedOtp =
+        String(otp || "").trim();
+
+      if (!normalizedPhone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number is required",
+        });
+      }
+
+      if (
+        !/^\d{6}$/.test(
+          normalizedOtp
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please enter a valid 6-digit OTP.",
+        });
+      }
+
+      const recovery =
+        await OrderRecovery.findOne({
+          phone:
+            normalizedPhone,
+
+          verified: false,
+        }).sort({
+          createdAt: -1,
+        });
+
+      if (!recovery) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "No active OTP found. Please request a new OTP.",
+        });
+      }
+
+      if (
+        new Date() >
+        new Date(
+          recovery.otpExpiresAt
+        )
+      ) {
+        await OrderRecovery.deleteOne({
+          _id:
+            recovery._id,
+        });
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "OTP has expired. Please request a new OTP.",
+        });
+      }
+
+      if (
+        recovery.attempts >= 5
+      ) {
+        await OrderRecovery.deleteOne({
+          _id:
+            recovery._id,
+        });
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Too many incorrect attempts. Please request a new OTP.",
+        });
+      }
+
+      const submittedHash =
+        crypto
+          .createHash("sha256")
+          .update(
+            normalizedOtp
+          )
+          .digest("hex");
+
+      if (
+        submittedHash !==
+        recovery.otpHash
+      ) {
+        recovery.attempts += 1;
+
+        await recovery.save();
+
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Incorrect OTP.",
+
+          remainingAttempts:
+            Math.max(
+              0,
+              5 -
+                recovery.attempts
+            ),
+        });
+      }
+
+      recovery.verified =
+        true;
+
+      recovery.verifiedAt =
+        new Date();
+
+      await recovery.save();
+
+      const orders =
+        await Order.find({
+          "customer.phone":
+            normalizedPhone,
+        })
+          .select(
+            "orderId customer status grandTotal paidAmount paymentStatus createdAt requestedDeliveryDate requestedDeliveryTime"
+          )
+          .sort({
+            createdAt: -1,
+          });
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "OTP verified successfully.",
+
+        orders:
+          orders.map(
+            (order) => ({
+              orderId:
+                order.orderId,
+
+              customerName:
+                order.customer?.name ||
+                "",
+
+              status:
+                order.status,
+
+              grandTotal:
+                Number(
+                  order.grandTotal ||
+                    0
+                ),
+
+              paidAmount:
+                Number(
+                  order.paidAmount ||
+                    0
+                ),
+
+              paymentStatus:
+                order.paymentStatus ||
+                "UNPAID",
+
+              requestedDeliveryDate:
+                order.requestedDeliveryDate,
+
+              requestedDeliveryTime:
+                order.requestedDeliveryTime,
+
+              createdAt:
+                order.createdAt,
+            })
+          ),
+      });
+    } catch (error) {
+      console.error(
+        "Verify order ID recovery error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  };
+
+// ==========================================
+// EXPORTS
 // ==========================================
 
 module.exports = {
@@ -2078,16 +2820,25 @@ module.exports = {
   getAllOrders,
   getOrderById,
   updateOrder,
+
   confirmOrderByCustomer,
   requestOrderChange,
+
   confirmOrderByAdmin,
+  addPayment,
+
   updateOrderStatus,
+  verifyDeliveryOtp,
+
   trackOrderByToken,
   trackOrderByOrderIdAndPhone,
+
   requestOrderCancellation,
   handleCancellationRequest,
   cancelOrderByAdmin,
-  addPayment,
-  verifyDeliveryOtp,
+
   deleteOrder,
+
+  requestOrderIdRecovery,
+  verifyOrderIdRecovery,
 };

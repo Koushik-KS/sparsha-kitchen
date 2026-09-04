@@ -362,6 +362,11 @@ const orderSchema = new mongoose.Schema(
     // DELIVERY OTP
     // ==========================================
 
+    deliveryOtp: {
+      type: String,
+      default: null,
+    },
+
     deliveryOtpHash: {
       type: String,
       default: null,

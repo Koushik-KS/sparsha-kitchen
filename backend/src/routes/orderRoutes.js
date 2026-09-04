@@ -4,35 +4,82 @@ const {
   createOrder,
   confirmOrderByCustomer,
   requestOrderChange,
+
   trackOrderByToken,
   trackOrderByOrderIdAndPhone,
-   requestOrderCancellation,
+
+  requestOrderCancellation,
+
+  requestOrderIdRecovery,
+  verifyOrderIdRecovery,
 } = require("../controllers/orderController");
 
 const router = express.Router();
 
 // ==========================================
-// CUSTOMER ORDER ROUTES
+// CUSTOMER: CREATE ORDER
 // ==========================================
 
-// Create order
-router.post("/", createOrder);
+router.post(
+  "/",
+  createOrder
+);
 
-// Track by Order ID + phone
-router.get("/track", trackOrderByOrderIdAndPhone);
+// ==========================================
+// CUSTOMER: TRACK ORDER
+// ==========================================
 
-// Track by secure tracking token
-router.get("/track/:trackingToken", trackOrderByToken);
+router.get(
+  "/track",
+  trackOrderByOrderIdAndPhone
+);
 
-// Confirm order
-router.post("/confirm/:token", confirmOrderByCustomer);
+router.get(
+  "/track/:trackingToken",
+  trackOrderByToken
+);
 
-// Request order change
-router.post("/change-request/:token", requestOrderChange);
+// ==========================================
+// CUSTOMER: CONFIRM ORDER
+// ==========================================
+
+router.post(
+  "/confirm/:token",
+  confirmOrderByCustomer
+);
+
+// ==========================================
+// CUSTOMER: CHANGE REQUEST
+// ==========================================
+
+router.post(
+  "/change-request/:token",
+  requestOrderChange
+);
+
+// ==========================================
+// CUSTOMER: CANCELLATION REQUEST
+// ==========================================
 
 router.post(
   "/cancel-request/:token",
   requestOrderCancellation
+);
+
+// ==========================================
+// CUSTOMER: FORGOT ORDER ID
+// ==========================================
+
+// Step 1: Request OTP using phone number
+router.post(
+  "/recover/request",
+  requestOrderIdRecovery
+);
+
+// Step 2: Verify OTP and retrieve order IDs
+router.post(
+  "/recover/verify",
+  verifyOrderIdRecovery
 );
 
 module.exports = router;
