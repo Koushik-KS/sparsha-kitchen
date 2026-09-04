@@ -16,15 +16,13 @@ const {
   confirmOrderByAdmin,
   updateOrderStatus,
   handleCancellationRequest,
+  addPayment,
+  verifyDeliveryOtp,
+  deleteOrder,
 } = require("../controllers/orderController");
 
-const deliveryPersonController = require("../controllers/deliveryPersonController");
-
-const router = express.Router();
-
-// ==========================================
-// DELIVERY PERSON CONTROLLER FUNCTIONS
-// ==========================================
+const deliveryPersonController =
+  require("../controllers/deliveryPersonController");
 
 const getAllDeliveryPersons =
   deliveryPersonController.getAllDeliveryPersons;
@@ -35,8 +33,10 @@ const assignDeliveryPerson =
 const removeDeliveryPerson =
   deliveryPersonController.removeDeliveryPerson;
 
+const router = express.Router();
+
 // ==========================================
-// ADMIN AUTHENTICATION TEST
+// ADMIN AUTH TEST
 // ==========================================
 
 router.get(
@@ -53,31 +53,27 @@ router.get(
 );
 
 // ==========================================
-// RECIPE MANAGEMENT
+// RECIPES
 // ==========================================
 
-// Create recipe
 router.post(
   "/recipes",
   protectAdmin,
   createRecipe
 );
 
-// Get all recipes
 router.get(
   "/recipes",
   protectAdmin,
   getAllRecipesAdmin
 );
 
-// Update recipe
 router.put(
   "/recipes/:id",
   protectAdmin,
   updateRecipe
 );
 
-// Delete recipe
 router.delete(
   "/recipes/:id",
   protectAdmin,
@@ -85,45 +81,67 @@ router.delete(
 );
 
 // ==========================================
-// ORDER MANAGEMENT
+// ORDERS
 // ==========================================
 
-// Get all orders
 router.get(
   "/orders",
   protectAdmin,
   getAllOrders
 );
 
-// Get one order
 router.get(
   "/orders/:id",
   protectAdmin,
   getOrderById
 );
 
-// Update order details
 router.put(
   "/orders/:id",
   protectAdmin,
   updateOrder
 );
 
-// Admin final confirmation
 router.post(
   "/orders/:id/confirm",
   protectAdmin,
   confirmOrderByAdmin
 );
 
-// Update order status
+// ==========================================
+// PAYMENT
+// ==========================================
+
+router.post(
+  "/orders/:id/payment",
+  protectAdmin,
+  addPayment
+);
+
+// ==========================================
+// DELIVERY OTP
+// ==========================================
+
+router.post(
+  "/orders/:id/verify-otp",
+  protectAdmin,
+  verifyDeliveryOtp
+);
+
+// ==========================================
+// ORDER STATUS
+// ==========================================
+
 router.patch(
   "/orders/:id/status",
   protectAdmin,
   updateOrderStatus
 );
 
-// Handle cancellation request
+// ==========================================
+// CANCELLATION
+// ==========================================
+
 router.patch(
   "/orders/:id/cancellation",
   protectAdmin,
@@ -131,32 +149,31 @@ router.patch(
 );
 
 // ==========================================
-// DELIVERY PERSON MANAGEMENT
+// DELIVERY TEAM
 // ==========================================
 
-// Get all delivery persons
 router.get(
   "/delivery-persons",
   protectAdmin,
   getAllDeliveryPersons
 );
 
-// Assign delivery person to order
 router.patch(
   "/delivery-persons/order/:id/assign",
   protectAdmin,
   assignDeliveryPerson
 );
 
-// Remove delivery person from order
 router.patch(
   "/delivery-persons/order/:id/remove",
   protectAdmin,
   removeDeliveryPerson
 );
 
-// ==========================================
-// EXPORT
-// ==========================================
+router.delete(
+  "/orders/:id",
+  protectAdmin,
+  deleteOrder
+);
 
 module.exports = router;

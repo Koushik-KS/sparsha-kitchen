@@ -5,6 +5,7 @@ const Order = require("../models/Order");
 const Recipe = require("../models/Recipe");
 
 require("../models/DeliveryPerson");
+
 // ==========================================
 // CREATE ORDER
 // ==========================================
@@ -22,20 +23,12 @@ const createOrder = async (req, res) => {
       deliveryCharge = 0,
     } = req.body;
 
-    // ==========================================
-    // VALIDATE CUSTOMER
-    // ==========================================
-
     if (!customer || !customer.name || !customer.phone) {
       return res.status(400).json({
         success: false,
         message: "Customer name and phone are required",
       });
     }
-
-    // ==========================================
-    // VALIDATE DELIVERY ADDRESS
-    // ==========================================
 
     if (!deliveryAddress || !deliveryAddress.trim()) {
       return res.status(400).json({
@@ -44,41 +37,21 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // VALIDATE DATE AND TIME
-    // ==========================================
-
-    if (
-      !requestedDeliveryDate ||
-      !requestedDeliveryTime
-    ) {
+    if (!requestedDeliveryDate || !requestedDeliveryTime) {
       return res.status(400).json({
         success: false,
-        message:
-          "Requested delivery date and time are required",
+        message: "Requested delivery date and time are required",
       });
     }
 
-    // ==========================================
-    // VALIDATE ITEMS
-    // ==========================================
-
-    if (
-      !Array.isArray(items) ||
-      items.length === 0
-    ) {
+    if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
         message: "At least one order item is required",
       });
     }
 
-    // ==========================================
-    // BUILD ORDER ITEMS
-    // ==========================================
-
     const orderItems = [];
-
     let foodTotal = 0;
 
     for (const item of items) {
@@ -89,42 +62,26 @@ const createOrder = async (req, res) => {
         });
       }
 
-      // ------------------------------------------
       // CUSTOM RECIPE
-      // ------------------------------------------
-
       if (item.isCustomRecipe) {
-        const price = Number(
-          item.customPrice
-        );
+        const price = Number(item.customPrice);
 
-        if (
-          !Number.isFinite(price) ||
-          price < 0
-        ) {
+        if (!Number.isFinite(price) || price < 0) {
           return res.status(400).json({
             success: false,
-            message:
-              "Invalid custom recipe price",
+            message: "Invalid custom recipe price",
           });
         }
 
-        const totalPrice =
-          price * item.quantity;
+        const totalPrice = price * item.quantity;
 
         foodTotal += totalPrice;
 
         orderItems.push({
-          name:
-            item.name ||
-            "Custom Recipe",
-          quantity:
-            item.quantity,
-          unit:
-            item.unit ||
-            "serving",
-          pricePerUnit:
-            price,
+          name: item.name || "Custom Recipe",
+          quantity: item.quantity,
+          unit: item.unit || "serving",
+          pricePerUnit: price,
           totalPrice,
           isCustomRecipe: true,
         });
@@ -132,49 +89,36 @@ const createOrder = async (req, res) => {
         continue;
       }
 
-      // ------------------------------------------
-      // NORMAL RECIPE
-      // ------------------------------------------
-
+      // REGULAR RECIPE
       if (!item.recipeId) {
         return res.status(400).json({
           success: false,
-          message:
-            "Recipe ID is required for regular recipe items",
+          message: "Recipe ID is required for regular recipe items",
         });
       }
 
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          item.recipeId
-        )
-      ) {
+      if (!mongoose.Types.ObjectId.isValid(item.recipeId)) {
         return res.status(400).json({
           success: false,
           message: "Invalid recipe ID",
         });
       }
 
-      const recipe =
-        await Recipe.findOne({
-          _id: item.recipeId,
-          isActive: true,
-          isAvailable: true,
-        });
+      const recipe = await Recipe.findOne({
+        _id: item.recipeId,
+        isActive: true,
+        isAvailable: true,
+      });
 
       if (!recipe) {
         return res.status(404).json({
           success: false,
-          message:
-            "Recipe not found or unavailable",
+          message: "Recipe not found or unavailable",
         });
       }
 
-      const quantity =
-        Number(item.quantity);
-
-      const totalPrice =
-        recipe.price * quantity;
+      const quantity = Number(item.quantity);
+      const totalPrice = recipe.price * quantity;
 
       foodTotal += totalPrice;
 
@@ -182,101 +126,88 @@ const createOrder = async (req, res) => {
         recipe: recipe._id,
         name: recipe.name,
         quantity,
-        unit:
-          item.unit ||
-          recipe.unit,
-        pricePerUnit:
-          recipe.price,
+        unit: item.unit || recipe.unit,
+        pricePerUnit: recipe.price,
         totalPrice,
         isCustomRecipe: false,
       });
     }
 
-    // ==========================================
-    // DELIVERY CHARGE
-    // ==========================================
-
-    const finalDeliveryCharge =
-      Number(deliveryCharge);
+    const finalDeliveryCharge = Number(deliveryCharge);
 
     if (
-      !Number.isFinite(
-        finalDeliveryCharge
-      ) ||
+      !Number.isFinite(finalDeliveryCharge) ||
       finalDeliveryCharge < 0
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid delivery charge",
+        message: "Invalid delivery charge",
       });
     }
 
-    const grandTotal =
-      foodTotal +
-      finalDeliveryCharge;
+    const grandTotal = foodTotal + finalDeliveryCharge;
 
-    // ==========================================
-    // GENERATE TOKENS
-    // ==========================================
+    const trackingToken = crypto
+      .randomBytes(24)
+      .toString("hex");
 
-    const trackingToken =
-      crypto.randomBytes(24).toString("hex");
+    const confirmationToken = crypto
+      .randomBytes(24)
+      .toString("hex");
 
-    const confirmationToken =
-      crypto.randomBytes(24).toString("hex");
-
-    const confirmationTokenExpiresAt =
-      new Date(
-        Date.now() +
-          24 * 60 * 60 * 1000
-      );
-
-    // ==========================================
-    // CREATE ORDER
-    // ==========================================
+    const confirmationTokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
 
     const order = await Order.create({
       customer: {
-        name:
-          customer.name.trim(),
-        phone:
-          customer.phone.trim(),
-        email:
-          customer.email
-            ?.trim()
-            .toLowerCase() ||
-          "",
+        name: customer.name.trim(),
+        phone: customer.phone.trim(),
+        email: customer.email?.trim().toLowerCase() || "",
       },
 
-      deliveryAddress:
-        deliveryAddress.trim(),
+      deliveryAddress: deliveryAddress.trim(),
 
-      mapPin:
-        mapPin?.trim() || "",
+      mapPin: mapPin?.trim() || "",
 
       requestedDeliveryDate,
       requestedDeliveryTime,
 
       additionalInstructions:
-        additionalInstructions?.trim() ||
-        "",
+        additionalInstructions?.trim() || "",
 
       items: orderItems,
 
       foodTotal,
-      deliveryCharge:
-        finalDeliveryCharge,
+
+      deliveryCharge: finalDeliveryCharge,
+
       grandTotal,
 
+      paymentStatus: "UNPAID",
+
+      paidAmount: 0,
+
+      paymentHistory: [],
+
+      deliveryOtpHash: null,
+
+      deliveryOtpExpiresAt: null,
+
+      deliveryOtpVerified: false,
+
+      deliveryOtpVerifiedAt: null,
+
       trackingToken,
+
       confirmationToken,
+
       confirmationTokenExpiresAt,
 
-      status:
-        "PENDING_CONFIRMATION",
+      status: "PENDING_CONFIRMATION",
 
       customerConfirmed: false,
+
       adminConfirmed: false,
 
       changeRequested: false,
@@ -285,8 +216,7 @@ const createOrder = async (req, res) => {
 
       statusHistory: [
         {
-          status:
-            "PENDING_CONFIRMATION",
+          status: "PENDING_CONFIRMATION",
           changedBy: "system",
           note:
             "Order created and waiting for customer confirmation",
@@ -296,15 +226,11 @@ const createOrder = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message:
-        "Order created successfully",
+      message: "Order created successfully",
       order,
     });
   } catch (error) {
-    console.error(
-      "Create order error:",
-      error
-    );
+    console.error("Create order error:", error);
 
     return res.status(500).json({
       success: false,
@@ -335,10 +261,7 @@ const getAllOrders = async (req, res) => {
       orders,
     });
   } catch (error) {
-    console.error(
-      "Get all orders error:",
-      error
-    );
+    console.error("Get all orders error:", error);
 
     return res.status(500).json({
       success: false,
@@ -355,9 +278,7 @@ const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (
-      !mongoose.Types.ObjectId.isValid(id)
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid order ID",
@@ -386,10 +307,7 @@ const getOrderById = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error(
-      "Get order by ID error:",
-      error
-    );
+    console.error("Get order by ID error:", error);
 
     return res.status(500).json({
       success: false,
@@ -417,25 +335,14 @@ const updateOrder = async (req, res) => {
       deliveryCharge,
     } = req.body;
 
-    // ==========================================
-    // VALIDATE ORDER ID
-    // ==========================================
-
-    if (
-      !mongoose.Types.ObjectId.isValid(id)
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid order ID",
       });
     }
 
-    // ==========================================
-    // FIND ORDER
-    // ==========================================
-
-    const order =
-      await Order.findById(id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -444,15 +351,7 @@ const updateOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // CANNOT EDIT DELIVERED/CANCELLED
-    // ==========================================
-
-    if (
-      ["DELIVERED", "CANCELLED"].includes(
-        order.status
-      )
-    ) {
+    if (["DELIVERED", "CANCELLED"].includes(order.status)) {
       return res.status(400).json({
         success: false,
         message:
@@ -460,45 +359,21 @@ const updateOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // VALIDATE CUSTOMER
-    // ==========================================
-
-    if (
-      !customer ||
-      !customer.name ||
-      !customer.phone
-    ) {
+    if (!customer || !customer.name || !customer.phone) {
       return res.status(400).json({
         success: false,
-        message:
-          "Customer name and phone are required",
+        message: "Customer name and phone are required",
       });
     }
 
-    // ==========================================
-    // VALIDATE DELIVERY ADDRESS
-    // ==========================================
-
-    if (
-      !deliveryAddress ||
-      !deliveryAddress.trim()
-    ) {
+    if (!deliveryAddress || !deliveryAddress.trim()) {
       return res.status(400).json({
         success: false,
-        message:
-          "Delivery address is required",
+        message: "Delivery address is required",
       });
     }
 
-    // ==========================================
-    // VALIDATE DATE/TIME
-    // ==========================================
-
-    if (
-      !requestedDeliveryDate ||
-      !requestedDeliveryTime
-    ) {
+    if (!requestedDeliveryDate || !requestedDeliveryTime) {
       return res.status(400).json({
         success: false,
         message:
@@ -506,17 +381,11 @@ const updateOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // UPDATE CUSTOMER
-    // ==========================================
-
     order.customer = {
       name: customer.name.trim(),
       phone: customer.phone.trim(),
       email:
-        customer.email
-          ?.trim()
-          .toLowerCase() || "",
+        customer.email?.trim().toLowerCase() || "",
     };
 
     order.deliveryAddress =
@@ -534,10 +403,6 @@ const updateOrder = async (req, res) => {
     order.additionalInstructions =
       additionalInstructions?.trim() || "";
 
-    // ==========================================
-    // UPDATE ITEMS
-    // ==========================================
-
     if (Array.isArray(items)) {
       if (items.length === 0) {
         return res.status(400).json({
@@ -551,8 +416,7 @@ const updateOrder = async (req, res) => {
       let foodTotal = 0;
 
       for (const item of items) {
-        const quantity =
-          Number(item.quantity);
+        const quantity = Number(item.quantity);
 
         if (
           !Number.isFinite(quantity) ||
@@ -560,23 +424,16 @@ const updateOrder = async (req, res) => {
         ) {
           return res.status(400).json({
             success: false,
-            message:
-              "Invalid item quantity",
+            message: "Invalid item quantity",
           });
         }
-
-        // ------------------------------------------
-        // CUSTOM RECIPE
-        // ------------------------------------------
 
         if (item.isCustomRecipe) {
           const customPrice =
             Number(item.customPrice);
 
           if (
-            !Number.isFinite(
-              customPrice
-            ) ||
+            !Number.isFinite(customPrice) ||
             customPrice < 0
           ) {
             return res.status(400).json({
@@ -607,10 +464,6 @@ const updateOrder = async (req, res) => {
 
           continue;
         }
-
-        // ------------------------------------------
-        // REGULAR RECIPE
-        // ------------------------------------------
 
         if (!item.recipeId) {
           return res.status(400).json({
@@ -670,15 +523,8 @@ const updateOrder = async (req, res) => {
       order.foodTotal = foodTotal;
     }
 
-    // ==========================================
-    // UPDATE DELIVERY CHARGE
-    // ==========================================
-
-    if (
-      deliveryCharge !== undefined
-    ) {
-      const charge =
-        Number(deliveryCharge);
+    if (deliveryCharge !== undefined) {
+      const charge = Number(deliveryCharge);
 
       if (
         !Number.isFinite(charge) ||
@@ -691,46 +537,21 @@ const updateOrder = async (req, res) => {
         });
       }
 
-      order.deliveryCharge =
-        charge;
+      order.deliveryCharge = charge;
     }
-
-    // ==========================================
-    // RECALCULATE GRAND TOTAL
-    // ==========================================
 
     order.grandTotal =
       Number(order.foodTotal) +
       Number(order.deliveryCharge);
 
-    // ==========================================
-    // RESET CONFIRMATIONS
-    // ==========================================
-    // Any important order edit requires
-    // the customer to confirm the updated order.
-    // ==========================================
+    order.customerConfirmed = false;
+    order.customerConfirmedAt = null;
 
-    order.customerConfirmed =
-      false;
+    order.adminConfirmed = false;
+    order.adminConfirmedAt = null;
 
-    order.customerConfirmedAt =
-      null;
-
-    order.adminConfirmed =
-      false;
-
-    order.adminConfirmedAt =
-      null;
-
-    order.changeRequested =
-      false;
-
-    order.changeRequestMessage =
-      "";
-
-    // ==========================================
-    // GENERATE NEW CONFIRMATION TOKEN
-    // ==========================================
+    order.changeRequested = false;
+    order.changeRequestMessage = "";
 
     order.confirmationToken =
       crypto
@@ -742,10 +563,6 @@ const updateOrder = async (req, res) => {
         Date.now() +
           24 * 60 * 60 * 1000
       );
-
-    // ==========================================
-    // CHANGE STATUS BACK TO PENDING
-    // ==========================================
 
     order.status =
       "PENDING_CONFIRMATION";
@@ -777,10 +594,7 @@ const updateOrder = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error(
-      "Update order error:",
-      error
-    );
+    console.error("Update order error:", error);
 
     return res.status(500).json({
       success: false,
@@ -793,20 +607,25 @@ const updateOrder = async (req, res) => {
 // CUSTOMER: CONFIRM ORDER
 // ==========================================
 
-const confirmOrderByCustomer = async (req, res) => {
+const confirmOrderByCustomer = async (
+  req,
+  res
+) => {
   try {
     const { token } = req.params;
 
     if (!token || !token.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Confirmation token is required",
+        message:
+          "Confirmation token is required",
       });
     }
 
-    const order = await Order.findOne({
-      confirmationToken: token,
-    });
+    const order =
+      await Order.findOne({
+        confirmationToken: token,
+      });
 
     if (!order) {
       return res.status(404).json({
@@ -815,10 +634,6 @@ const confirmOrderByCustomer = async (req, res) => {
           "Invalid or expired confirmation token",
       });
     }
-
-    // ==========================================
-    // CHECK TOKEN EXPIRY
-    // ==========================================
 
     if (
       order.confirmationTokenExpiresAt &&
@@ -834,10 +649,6 @@ const confirmOrderByCustomer = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // ALREADY CONFIRMED
-    // ==========================================
-
     if (order.customerConfirmed) {
       return res.status(400).json({
         success: false,
@@ -845,10 +656,6 @@ const confirmOrderByCustomer = async (req, res) => {
           "Order has already been confirmed by customer",
       });
     }
-
-    // ==========================================
-    // CANNOT CONFIRM CANCELLED/DELIVERED
-    // ==========================================
 
     if (
       ["CANCELLED", "DELIVERED"].includes(
@@ -861,10 +668,6 @@ const confirmOrderByCustomer = async (req, res) => {
           `Order cannot be confirmed when status is ${order.status}`,
       });
     }
-
-    // ==========================================
-    // CUSTOMER CONFIRMATION
-    // ==========================================
 
     order.customerConfirmed = true;
     order.customerConfirmedAt = new Date();
@@ -880,13 +683,8 @@ const confirmOrderByCustomer = async (req, res) => {
         "Customer confirmed the order",
     });
 
-    // ==========================================
-    // TOKEN CAN ONLY BE USED ONCE
-    // ==========================================
-
     order.confirmationToken = null;
-    order.confirmationTokenExpiresAt =
-      null;
+    order.confirmationTokenExpiresAt = null;
 
     await order.save();
 
@@ -902,31 +700,26 @@ const confirmOrderByCustomer = async (req, res) => {
       order: {
         orderId:
           order.orderId,
-
         status:
           order.status,
-
         customerConfirmed:
           order.customerConfirmed,
-
         customerConfirmedAt:
           order.customerConfirmedAt,
-
         adminConfirmed:
           order.adminConfirmed,
-
         deliveryPerson:
           order.deliveryPerson,
-
         foodTotal:
           order.foodTotal,
-
         deliveryCharge:
           order.deliveryCharge,
-
         grandTotal:
           order.grandTotal,
-
+        paymentStatus:
+          order.paymentStatus,
+        paidAmount:
+          order.paidAmount,
         trackingToken:
           order.trackingToken,
       },
@@ -959,7 +752,8 @@ const requestOrderChange = async (
     if (!token || !token.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Tracking token is required",
+        message:
+          "Tracking token is required",
       });
     }
 
@@ -983,10 +777,6 @@ const requestOrderChange = async (
       });
     }
 
-    // ==========================================
-    // CANNOT REQUEST CHANGE
-    // ==========================================
-
     if (
       ["DELIVERED", "CANCELLED"].includes(
         order.status
@@ -998,10 +788,6 @@ const requestOrderChange = async (
           `Changes cannot be requested when order status is ${order.status}`,
       });
     }
-
-    // ==========================================
-    // SAVE CHANGE REQUEST
-    // ==========================================
 
     order.changeRequested = true;
 
@@ -1024,13 +810,10 @@ const requestOrderChange = async (
       order: {
         orderId:
           order.orderId,
-
         status:
           order.status,
-
         changeRequested:
           order.changeRequested,
-
         changeRequestMessage:
           order.changeRequestMessage,
       },
@@ -1052,7 +835,10 @@ const requestOrderChange = async (
 // ADMIN: CONFIRM ORDER
 // ==========================================
 
-const confirmOrderByAdmin = async (req, res) => {
+const confirmOrderByAdmin = async (
+  req,
+  res
+) => {
   try {
     const { id } = req.params;
 
@@ -1063,7 +849,8 @@ const confirmOrderByAdmin = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(id);
+    const order =
+      await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -1071,10 +858,6 @@ const confirmOrderByAdmin = async (req, res) => {
         message: "Order not found",
       });
     }
-
-    // ==========================================
-    // CUSTOMER MUST CONFIRM FIRST
-    // ==========================================
 
     if (!order.customerConfirmed) {
       return res.status(400).json({
@@ -1084,10 +867,6 @@ const confirmOrderByAdmin = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // CHANGE REQUEST MUST BE RESOLVED
-    // ==========================================
-
     if (order.changeRequested) {
       return res.status(400).json({
         success: false,
@@ -1096,10 +875,6 @@ const confirmOrderByAdmin = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // ALREADY CONFIRMED
-    // ==========================================
-
     if (order.adminConfirmed) {
       return res.status(400).json({
         success: false,
@@ -1107,10 +882,6 @@ const confirmOrderByAdmin = async (req, res) => {
           "Order has already been confirmed by admin",
       });
     }
-
-    // ==========================================
-    // CANNOT CONFIRM CANCELLED/DELIVERED
-    // ==========================================
 
     if (
       ["CANCELLED", "DELIVERED"].includes(
@@ -1124,17 +895,15 @@ const confirmOrderByAdmin = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // ADMIN CONFIRMATION
-    // ==========================================
-
     order.adminConfirmed = true;
     order.adminConfirmedAt = new Date();
 
-    order.status = "CONFIRMED";
+    order.status =
+      "CONFIRMED";
 
     order.statusHistory.push({
-      status: "CONFIRMED",
+      status:
+        "CONFIRMED",
       changedBy: "admin",
       note:
         "Admin confirmed the customer order",
@@ -1152,8 +921,10 @@ const confirmOrderByAdmin = async (req, res) => {
       message:
         "Order confirmed by admin successfully",
       order: {
-        orderId: order.orderId,
-        status: order.status,
+        orderId:
+          order.orderId,
+        status:
+          order.status,
         customerConfirmed:
           order.customerConfirmed,
         adminConfirmed:
@@ -1166,6 +937,10 @@ const confirmOrderByAdmin = async (req, res) => {
           order.deliveryCharge,
         grandTotal:
           order.grandTotal,
+        paymentStatus:
+          order.paymentStatus,
+        paidAmount:
+          order.paidAmount,
         trackingToken:
           order.trackingToken,
       },
@@ -1184,17 +959,13 @@ const confirmOrderByAdmin = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: UPDATE ORDER STATUS
+// ADMIN: ADD PAYMENT
 // ==========================================
 
-const updateOrderStatus = async (req, res) => {
+const addPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, note } = req.body;
-
-    // ==========================================
-    // VALIDATE ORDER ID
-    // ==========================================
+    const { amount, method, note } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -1203,9 +974,188 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // ALLOWED STATUSES
-    // ==========================================
+    const paymentAmount = Number(amount);
+
+    if (
+      !Number.isFinite(paymentAmount) ||
+      paymentAmount <= 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment amount must be greater than 0",
+      });
+    }
+
+    const allowedMethods = [
+      "UPI",
+      "CASH",
+      "BANK_TRANSFER",
+      "OTHER",
+    ];
+
+    if (!allowedMethods.includes(method)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid payment method",
+      });
+    }
+
+    const order =
+      await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (order.status === "CANCELLED") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment cannot be added to a cancelled order",
+      });
+    }
+
+    const currentPaidAmount =
+      Number(order.paidAmount || 0);
+
+    const grandTotal =
+      Number(order.grandTotal || 0);
+
+    const remainingAmount =
+      grandTotal -
+      currentPaidAmount;
+
+    if (remainingAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This order is already fully paid",
+      });
+    }
+
+    if (paymentAmount > remainingAmount) {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Payment cannot exceed remaining amount of ₹${remainingAmount.toFixed(
+            2
+          )}`,
+      });
+    }
+
+    order.paymentHistory.push({
+      amount: paymentAmount,
+      method,
+      recordedAt: new Date(),
+      recordedBy:
+        req.admin?.email || "admin",
+      note:
+        note?.trim() || "",
+    });
+
+    order.paidAmount =
+      currentPaidAmount +
+      paymentAmount;
+
+    if (
+      order.paidAmount >=
+      grandTotal
+    ) {
+      order.paidAmount =
+        grandTotal;
+
+      order.paymentStatus =
+        "PAID";
+    } else if (
+      order.paidAmount > 0
+    ) {
+      order.paymentStatus =
+        "PARTIALLY_PAID";
+    } else {
+      order.paymentStatus =
+        "UNPAID";
+    }
+
+    order.statusHistory.push({
+      status:
+        order.status,
+      changedBy:
+        "admin",
+      note:
+        `Payment recorded: ₹${paymentAmount.toFixed(
+          2
+        )} via ${method}`,
+    });
+
+    await order.save();
+
+    await order.populate(
+      "deliveryPerson",
+      "name phone whatsapp"
+    );
+
+    await order.populate(
+      "items.recipe",
+      "name photos price unit"
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Payment added successfully",
+      order,
+      payment: {
+        amount:
+          paymentAmount,
+        method,
+        paidAmount:
+          order.paidAmount,
+        remainingAmount:
+          Math.max(
+            0,
+            grandTotal -
+              order.paidAmount
+          ),
+        paymentStatus:
+          order.paymentStatus,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Add payment error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// ==========================================
+// ADMIN: UPDATE ORDER STATUS
+// ==========================================
+
+const updateOrderStatus = async (
+  req,
+  res
+) => {
+  try {
+    const { id } = req.params;
+    const { status, note } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
 
     const allowedStatuses = [
       "PREPARING",
@@ -1220,13 +1170,10 @@ const updateOrderStatus = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid order status",
+        message:
+          "Invalid order status",
       });
     }
-
-    // ==========================================
-    // FIND ORDER
-    // ==========================================
 
     const order =
       await Order.findById(id);
@@ -1237,10 +1184,6 @@ const updateOrderStatus = async (req, res) => {
         message: "Order not found",
       });
     }
-
-    // ==========================================
-    // ADMIN CONFIRMATION REQUIRED
-    // ==========================================
 
     if (
       !order.adminConfirmed ||
@@ -1254,10 +1197,6 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // DELIVERED ORDERS CANNOT BE CHANGED
-    // ==========================================
-
     if (order.status === "DELIVERED") {
       return res.status(400).json({
         success: false,
@@ -1265,32 +1204,6 @@ const updateOrderStatus = async (req, res) => {
           "Delivered orders cannot be changed",
       });
     }
-
-    // ==========================================
-    // DELIVERY PERSON REQUIRED
-    // ==========================================
-    //
-    // IMPORTANT:
-    //
-    // Admin MUST assign a delivery person
-    // before the order can move to PREPARING.
-    //
-    // The requirement also remains for all
-    // later delivery stages.
-    //
-    // CONFIRMED
-    //     ↓
-    // Assign Ravi Kumar
-    //     ↓
-    // PREPARING
-    //     ↓
-    // READY
-    //     ↓
-    // OUT_FOR_DELIVERY
-    //     ↓
-    // DELIVERED
-    //
-    // ==========================================
 
     if (
       !order.deliveryPerson &&
@@ -1307,10 +1220,6 @@ const updateOrderStatus = async (req, res) => {
           "Please assign a delivery person before continuing the order.",
       });
     }
-
-    // ==========================================
-    // VALID STATUS TRANSITIONS
-    // ==========================================
 
     const validTransitions = {
       CONFIRMED: [
@@ -1346,17 +1255,115 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // ==========================================
-    // SAVE STATUS
+    // DELIVERED REQUIREMENTS
     // ==========================================
+
+    if (status === "DELIVERED") {
+      if (
+        !order.deliveryOtpVerified
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Delivery OTP must be verified before marking the order delivered.",
+        });
+      }
+
+      if (
+        Number(order.paidAmount || 0) <
+        Number(order.grandTotal || 0)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Remaining payment must be confirmed before marking the order delivered.",
+        });
+      }
+    }
+
+    // ==========================================
+    // GENERATE DELIVERY OTP
+    // ==========================================
+
+    if (
+      status ===
+      "OUT_FOR_DELIVERY"
+    ) {
+      const otp =
+        crypto
+          .randomInt(
+            100000,
+            1000000
+          )
+          .toString();
+
+      order.deliveryOtpHash =
+        crypto
+          .createHash("sha256")
+          .update(otp)
+          .digest("hex");
+
+      order.deliveryOtpExpiresAt =
+        new Date(
+          Date.now() +
+            24 * 60 * 60 * 1000
+        );
+
+      order.deliveryOtpVerified =
+        false;
+
+      order.deliveryOtpVerifiedAt =
+        null;
+
+      order.statusHistory.push({
+        status:
+          "OUT_FOR_DELIVERY",
+        changedBy:
+          "system",
+        note:
+          "Delivery OTP generated for customer",
+      });
+
+      order.status =
+        "OUT_FOR_DELIVERY";
+
+      order.statusHistory.push({
+        status:
+          "OUT_FOR_DELIVERY",
+        changedBy:
+          "admin",
+        note:
+          note?.trim() ||
+          "Order sent out for delivery",
+      });
+
+      await order.save();
+
+      await order.populate(
+        "deliveryPerson",
+        "name phone whatsapp"
+      );
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Order is out for delivery. Delivery OTP has been generated.",
+        order,
+        deliveryOtpGenerated:
+          true,
+      });
+    }
 
     const previousStatus =
       order.status;
 
-    order.status = status;
+    order.status =
+      status;
 
     order.statusHistory.push({
       status,
-      changedBy: "admin",
+      changedBy:
+        "admin",
       note:
         note?.trim() ||
         `Order status changed from ${previousStatus} to ${status}`,
@@ -1373,35 +1380,7 @@ const updateOrderStatus = async (req, res) => {
       success: true,
       message:
         `Order status updated to ${status}`,
-
-      order: {
-        orderId:
-          order.orderId,
-
-        status:
-          order.status,
-
-        customerConfirmed:
-          order.customerConfirmed,
-
-        adminConfirmed:
-          order.adminConfirmed,
-
-        deliveryPerson:
-          order.deliveryPerson,
-
-        foodTotal:
-          order.foodTotal,
-
-        deliveryCharge:
-          order.deliveryCharge,
-
-        grandTotal:
-          order.grandTotal,
-
-        trackingToken:
-          order.trackingToken,
-      },
+      order,
     });
   } catch (error) {
     console.error(
@@ -1415,37 +1394,193 @@ const updateOrderStatus = async (req, res) => {
     });
   }
 };
+
+// ==========================================
+// ADMIN: VERIFY DELIVERY OTP
+// ==========================================
+
+const verifyDeliveryOtp = async (
+  req,
+  res
+) => {
+  try {
+    const { id } = req.params;
+    const { otp } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    if (!otp) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery OTP is required",
+      });
+    }
+
+    const order =
+      await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Order not found",
+      });
+    }
+
+    if (
+      order.status !==
+      "OUT_FOR_DELIVERY"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery OTP can only be verified when the order is out for delivery.",
+      });
+    }
+
+    if (
+      order.deliveryOtpVerified
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery OTP has already been verified.",
+      });
+    }
+
+    if (
+      !order.deliveryOtpHash ||
+      !order.deliveryOtpExpiresAt
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery OTP is not available.",
+      });
+    }
+
+    if (
+      new Date() >
+      new Date(
+        order.deliveryOtpExpiresAt
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery OTP has expired.",
+      });
+    }
+
+    const submittedHash =
+      crypto
+        .createHash("sha256")
+        .update(
+          String(otp).trim()
+        )
+        .digest("hex");
+
+    if (
+      submittedHash !==
+      order.deliveryOtpHash
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Incorrect delivery OTP.",
+      });
+    }
+
+    order.deliveryOtpVerified =
+      true;
+
+    order.deliveryOtpVerifiedAt =
+      new Date();
+
+    order.deliveryOtpHash =
+      null;
+
+    order.deliveryOtpExpiresAt =
+      null;
+
+    order.statusHistory.push({
+      status:
+        order.status,
+      changedBy:
+        "admin",
+      note:
+        "Delivery OTP verified successfully",
+    });
+
+    await order.save();
+
+    await order.populate(
+      "deliveryPerson",
+      "name phone whatsapp"
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Delivery OTP verified successfully.",
+      order,
+    });
+  } catch (error) {
+    console.error(
+      "Verify delivery OTP error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 // ==========================================
 // CUSTOMER: TRACK ORDER BY TRACKING TOKEN
 // ==========================================
 
-const trackOrderByToken = async (req, res) => {
+const trackOrderByToken = async (
+  req,
+  res
+) => {
   try {
     const { token } = req.params;
 
     if (!token) {
       return res.status(400).json({
         success: false,
-        message: "Tracking token is required",
+        message:
+          "Tracking token is required",
       });
     }
 
-    const order = await Order.findOne({
-      trackingToken: token,
-    })
-      .populate(
-        "deliveryPerson",
-        "name phone whatsapp"
-      )
-      .populate(
-        "items.recipe",
-        "name photos price unit"
-      );
+    const order =
+      await Order.findOne({
+        trackingToken: token,
+      })
+        .populate(
+          "deliveryPerson",
+          "name phone whatsapp"
+        )
+        .populate(
+          "items.recipe",
+          "name photos price unit"
+        );
 
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order not found",
+        message:
+          "Order not found",
       });
     }
 
@@ -1470,337 +1605,380 @@ const trackOrderByToken = async (req, res) => {
 // CUSTOMER: TRACK ORDER BY ORDER ID + PHONE
 // ==========================================
 
-const trackOrderByOrderIdAndPhone = async (
-  req,
-  res
-) => {
-  try {
-    const { orderId, phone } = req.body;
+const trackOrderByOrderIdAndPhone =
+  async (req, res) => {
+    try {
+      // IMPORTANT:
+      // Frontend uses GET /orders/track?orderId=...&phone=...
+      // Therefore these values come from req.query, NOT req.body.
+      const {
+        orderId,
+        phone,
+      } = req.query;
 
-    if (!orderId || !phone) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Order ID and phone number are required",
+      if (!orderId || !phone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Order ID and phone number are required",
+        });
+      }
+
+      const normalizedPhone =
+        String(phone).trim();
+
+      const order =
+        await Order.findOne({
+          orderId:
+            String(orderId).trim(),
+          "customer.phone":
+            normalizedPhone,
+        })
+          .populate(
+            "deliveryPerson",
+            "name phone whatsapp"
+          )
+          .populate(
+            "items.recipe",
+            "name photos price unit"
+          );
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Order not found. Please check your order ID and phone number.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        order,
       });
-    }
-
-    const normalizedPhone =
-      String(phone).trim();
-
-    const order = await Order.findOne({
-      orderId: String(orderId).trim(),
-      "customer.phone": normalizedPhone,
-    })
-      .populate(
-        "deliveryPerson",
-        "name phone whatsapp"
-      )
-      .populate(
-        "items.recipe",
-        "name photos price unit"
+    } catch (error) {
+      console.error(
+        "Track order by order ID and phone error:",
+        error
       );
 
-    if (!order) {
-      return res.status(404).json({
+      return res.status(500).json({
         success: false,
-        message:
-          "Order not found. Please check your order ID and phone number.",
+        message: "Server error",
       });
     }
-
-    return res.status(200).json({
-      success: true,
-      order,
-    });
-  } catch (error) {
-    console.error(
-      "Track order by order ID and phone error:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+  };
 
 // ==========================================
 // CUSTOMER: REQUEST ORDER CANCELLATION
 // ==========================================
 
-const requestOrderCancellation = async (
-  req,
-  res
-) => {
-  try {
-    const { token } = req.params;
-    const { message } = req.body;
+const requestOrderCancellation =
+  async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { message } = req.body;
 
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "Tracking token is required",
-      });
-    }
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tracking token is required",
+        });
+      }
 
-    const order = await Order.findOne({
-      trackingToken: token,
-    });
+      const order =
+        await Order.findOne({
+          trackingToken: token,
+        });
 
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Order not found",
+        });
+      }
 
-    if (
-      ["CANCELLED", "DELIVERED"].includes(
-        order.status
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          `Order cannot be cancelled when status is ${order.status}`,
-      });
-    }
+      if (
+        ["CANCELLED", "DELIVERED"].includes(
+          order.status
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            `Order cannot be cancelled when status is ${order.status}`,
+        });
+      }
 
-    if (
-      order.status === "OUT_FOR_DELIVERY"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Order cannot be cancelled after it is out for delivery",
-      });
-    }
+      if (
+        order.status ===
+        "OUT_FOR_DELIVERY"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Order cannot be cancelled after it is out for delivery",
+        });
+      }
 
-    if (
-      order.cancellationRequested
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Cancellation request has already been submitted",
-      });
-    }
+      if (
+        order.cancellationRequested
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Cancellation request has already been submitted",
+        });
+      }
 
-    order.cancellationRequested = true;
-    order.cancellationRequestedAt =
-      new Date();
+      order.cancellationRequested =
+        true;
 
-    order.cancellationMessage =
-      message?.trim() || "";
+      order.cancellationRequestedAt =
+        new Date();
 
-    order.statusHistory.push({
-      status: order.status,
-      changedBy: "customer",
-      note:
-        message?.trim()
-          ? `Cancellation requested: ${message.trim()}`
-          : "Customer requested order cancellation",
-    });
+      order.cancellationMessage =
+        message?.trim() || "";
 
-    await order.save();
-
-    return res.status(200).json({
-      success: true,
-      message:
-        "Cancellation request submitted successfully",
-      order: {
-        orderId:
-          order.orderId,
+      order.statusHistory.push({
         status:
           order.status,
-        cancellationRequested:
-          order.cancellationRequested,
-        cancellationMessage:
-          order.cancellationMessage,
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Request order cancellation error:",
-      error
-    );
+        changedBy:
+          "customer",
+        note:
+          message?.trim()
+            ? `Cancellation requested: ${message.trim()}`
+            : "Customer requested order cancellation",
+      });
 
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Cancellation request submitted successfully",
+        order: {
+          orderId:
+            order.orderId,
+          status:
+            order.status,
+          cancellationRequested:
+            order.cancellationRequested,
+          cancellationMessage:
+            order.cancellationMessage,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Request order cancellation error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  };
 
 // ==========================================
 // ADMIN: HANDLE CANCELLATION REQUEST
 // ==========================================
 
-const handleCancellationRequest = async (
-  req,
-  res
-) => {
+const handleCancellationRequest =
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const {
+        action,
+        note,
+      } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid order ID",
+        });
+      }
+
+      if (
+        !["approve", "reject"].includes(
+          action
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Action must be approve or reject",
+        });
+      }
+
+      const order =
+        await Order.findById(id);
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Order not found",
+        });
+      }
+
+      if (
+        !order.cancellationRequested
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "No cancellation request is pending",
+        });
+      }
+
+      if (
+        ["CANCELLED", "DELIVERED"].includes(
+          order.status
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            `Order cannot be changed when status is ${order.status}`,
+        });
+      }
+
+      if (action === "approve") {
+        order.status =
+          "CANCELLED";
+
+        order.cancellationRequested =
+          false;
+
+        order.cancellationApproved =
+          true;
+
+        order.cancellationApprovedAt =
+          new Date();
+
+        order.statusHistory.push({
+          status:
+            "CANCELLED",
+          changedBy:
+            "admin",
+          note:
+            note?.trim() ||
+            "Admin approved customer cancellation request",
+        });
+      }
+
+      if (action === "reject") {
+        order.cancellationRequested =
+          false;
+
+        order.cancellationApproved =
+          false;
+
+        order.cancellationRejectedAt =
+          new Date();
+
+        order.statusHistory.push({
+          status:
+            order.status,
+          changedBy:
+            "admin",
+          note:
+            note?.trim() ||
+            "Admin rejected customer cancellation request",
+        });
+      }
+
+      await order.save();
+
+      await order.populate(
+        "deliveryPerson",
+        "name phone whatsapp"
+      );
+
+      await order.populate(
+        "items.recipe",
+        "name photos price unit"
+      );
+
+      return res.status(200).json({
+        success: true,
+        message:
+          action === "approve"
+            ? "Cancellation approved successfully"
+            : "Cancellation request rejected successfully",
+        order,
+      });
+    } catch (error) {
+      console.error(
+        "Handle cancellation request error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  };
+const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      action,
-      note,
-    } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid order ID",
+        message: "Invalid order ID.",
       });
     }
 
-    if (
-      !["approve", "reject"].includes(
-        action
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Action must be approve or reject",
-      });
-    }
-
-    const order =
-      await Order.findById(id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order not found",
+        message: "Order not found.",
       });
     }
 
-    if (
-      !order.cancellationRequested
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "No cancellation request is pending",
-      });
-    }
-
-    if (
-      ["CANCELLED", "DELIVERED"].includes(
-        order.status
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          `Order cannot be changed when status is ${order.status}`,
-      });
-    }
-
-    // ==========================================
-    // APPROVE CANCELLATION
-    // ==========================================
-
-    if (action === "approve") {
-      order.status = "CANCELLED";
-
-      order.cancellationRequested =
-        false;
-
-      order.cancellationApproved =
-        true;
-
-      order.cancellationApprovedAt =
-        new Date();
-
-      order.statusHistory.push({
-        status: "CANCELLED",
-        changedBy: "admin",
-        note:
-          note?.trim() ||
-          "Admin approved customer cancellation request",
-      });
-    }
-
-    // ==========================================
-    // REJECT CANCELLATION
-    // ==========================================
-
-    if (action === "reject") {
-      order.cancellationRequested =
-        false;
-
-      order.cancellationApproved =
-        false;
-
-      order.cancellationRejectedAt =
-        new Date();
-
-      order.statusHistory.push({
-        status: order.status,
-        changedBy: "admin",
-        note:
-          note?.trim() ||
-          "Admin rejected customer cancellation request",
-      });
-    }
-
-    await order.save();
-
-    await order.populate(
-      "deliveryPerson",
-      "name phone whatsapp"
-    );
-
-    await order.populate(
-      "items.recipe",
-      "name photos price unit"
-    );
+    await Order.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
-      message:
-        action === "approve"
-          ? "Cancellation approved successfully"
-          : "Cancellation request rejected successfully",
-      order,
+      message: "Order deleted permanently.",
     });
   } catch (error) {
-    console.error(
-      "Handle cancellation request error:",
-      error
-    );
+    console.error("Delete order error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Unable to delete order.",
     });
   }
 };
-
 // ==========================================
 // EXPORT CONTROLLERS
 // ==========================================
 
 module.exports = {
   createOrder,
-
   getAllOrders,
   getOrderById,
   updateOrder,
-
   confirmOrderByCustomer,
   requestOrderChange,
-
   confirmOrderByAdmin,
   updateOrderStatus,
-
   trackOrderByToken,
   trackOrderByOrderIdAndPhone,
-
   requestOrderCancellation,
   handleCancellationRequest,
+  addPayment,
+  verifyDeliveryOtp,
+  deleteOrder,
 };

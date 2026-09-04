@@ -86,46 +86,6 @@ const statusHistorySchema = new mongoose.Schema(
 );
 
 // ==========================================
-// PAYMENT HISTORY SCHEMA
-// ==========================================
-
-const paymentHistorySchema = new mongoose.Schema(
-  {
-    amount: {
-      type: Number,
-      required: true,
-      min: 0.01,
-    },
-
-    method: {
-      type: String,
-      enum: ["UPI", "CASH", "BANK_TRANSFER", "OTHER"],
-      required: true,
-    },
-
-    recordedAt: {
-      type: Date,
-      default: Date.now,
-    },
-
-    recordedBy: {
-      type: String,
-      default: "admin",
-      trim: true,
-    },
-
-    note: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-  },
-  {
-    _id: true,
-  }
-);
-
-// ==========================================
 // ORDER SCHEMA
 // ==========================================
 
@@ -240,27 +200,6 @@ const orderSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // PAYMENT
-    // ==========================================
-
-    paymentStatus: {
-      type: String,
-      enum: ["UNPAID", "PARTIALLY_PAID", "PAID"],
-      default: "UNPAID",
-    },
-
-    paidAmount: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    paymentHistory: {
-      type: [paymentHistorySchema],
-      default: [],
-    },
-
-    // ==========================================
     // DELIVERY PERSON
     // ==========================================
 
@@ -356,30 +295,6 @@ const orderSchema = new mongoose.Schema(
     statusHistory: {
       type: [statusHistorySchema],
       default: [],
-    },
-
-    // ==========================================
-    // DELIVERY OTP
-    // ==========================================
-
-    deliveryOtpHash: {
-      type: String,
-      default: null,
-    },
-
-    deliveryOtpExpiresAt: {
-      type: Date,
-      default: null,
-    },
-
-    deliveryOtpVerified: {
-      type: Boolean,
-      default: false,
-    },
-
-    deliveryOtpVerifiedAt: {
-      type: Date,
-      default: null,
     },
 
     // ==========================================

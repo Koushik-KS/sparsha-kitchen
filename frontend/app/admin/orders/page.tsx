@@ -52,6 +52,24 @@ type DeliveryPerson = {
   isActive?: boolean;
 };
 
+type PaymentStatus =
+  | "UNPAID"
+  | "PARTIALLY_PAID"
+  | "PAID";
+
+type PaymentHistory = {
+  _id?: string;
+  amount: number;
+  method:
+    | "UPI"
+    | "CASH"
+    | "BANK_TRANSFER"
+    | "OTHER";
+  recordedAt: string;
+  recordedBy?: string;
+  note?: string;
+};
+
 type Order = {
   _id: string;
   orderId: string;
@@ -75,6 +93,10 @@ type Order = {
   foodTotal: number;
   deliveryCharge: number;
   grandTotal: number;
+
+  paymentStatus?: PaymentStatus;
+  paidAmount?: number;
+  paymentHistory?: PaymentHistory[];
 
   deliveryPerson?: DeliveryPerson | null;
 
@@ -152,7 +174,6 @@ const NEXT_STATUS: Partial<
   CONFIRMED: "PREPARING",
   PREPARING: "READY",
   READY: "OUT_FOR_DELIVERY",
-  OUT_FOR_DELIVERY: "DELIVERED",
 };
 
 const NEXT_STATUS_LABEL: Partial<
@@ -161,7 +182,6 @@ const NEXT_STATUS_LABEL: Partial<
   CONFIRMED: "Start Preparing",
   PREPARING: "Mark Ready",
   READY: "Send for Delivery",
-  OUT_FOR_DELIVERY: "Mark Delivered",
 };
 
 export default function AdminOrdersPage() {
@@ -182,6 +202,7 @@ export default function AdminOrdersPage() {
   const [message, setMessage] = useState("");
 
   const [search, setSearch] = useState("");
+
   const [statusFilter, setStatusFilter] =
     useState<"ALL" | OrderStatus>("ALL");
 
@@ -190,6 +211,26 @@ export default function AdminOrdersPage() {
 
   const [editingOrder, setEditingOrder] =
     useState<Order | null>(null);
+
+  const [paymentOrder, setPaymentOrder] =
+    useState<Order | null>(null);
+
+  const [paymentAmount, setPaymentAmount] =
+    useState("");
+
+  const [paymentMethod, setPaymentMethod] =
+    useState<
+      "UPI" | "CASH" | "BANK_TRANSFER" | "OTHER"
+    >("UPI");
+
+  const [paymentNote, setPaymentNote] =
+    useState("");
+
+  const [otpOrder, setOtpOrder] =
+    useState<Order | null>(null);
+
+  const [deliveryOtp, setDeliveryOtp] =
+    useState("");
 
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -250,7 +291,8 @@ export default function AdminOrdersPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to load orders."
+          data.message ||
+            "Unable to load orders."
         );
       }
 
@@ -515,26 +557,217 @@ export default function AdminOrdersPage() {
     );
   };
 
-  // ==========================================
-  // ADVANCE ORDER STATUS
-  // ==========================================
+  const getPaidAmount = (order: Order) =>
+    Number(order.paidAmount || 0);
 
-  const advanceOrder = async (order: Order) => {
-    const nextStatus = NEXT_STATUS[order.status];
+  const getRemainingAmount = (
+    order: Order
+  ) =>
+    Math.max(
+      0,
+      Number(order.grandTotal || 0) -
+        getPaidAmount(order)
+    );
+
+  const getPaymentStatus = (
+    order: Order
+  ): PaymentStatus => {
+    const paid = getPaidAmount(order);
+    const total = Number(
+      order.grandTotal || 0
+    );
+
+    if (paid >= total) {
+      return "PAID";
+    }
+
+    if (paid > 0) {
+      return "PARTIALLY_PAID";
+    }
+
+    return "UNPAID";
+  };
+
+  const openPayment = (order: Order) => {
+    setError("");
+    setMessage("");
+
+    setPaymentOrder(order);
+
+    const remaining =
+      getRemainingAmount(order);
+
+    setPaymentAmount(
+      remaining > 0
+        ? remaining.toFixed(2)
+        : ""
+    );
+
+    setPaymentMethod("UPI");
+    setPaymentNote("");
+  };
+
+  const addPayment = async () => {
+    if (!paymentOrder) {
+      return;
+    }
+
+    const amount =
+      Number(paymentAmount);
+
+    const remaining =
+      getRemainingAmount(paymentOrder);
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setError(
+        "Payment amount must be greater than ₹0."
+      );
+      return;
+    }
+
+    if (
+      amount >
+      remaining + 0.001
+    ) {
+      setError(
+        `Payment cannot exceed the remaining amount of ${formatMoney(
+          remaining
+        )}.`
+      );
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(
+        paymentOrder._id
+      );
+
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_URL}/admin/orders/${paymentOrder._id}/payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            amount,
+            method: paymentMethod,
+            note: paymentNote.trim(),
+          }),
+        }
+      );
+
+      const data: OrderResponse =
+        await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.message ||
+            "Unable to record payment."
+        );
+      }
+
+      setMessage(
+        data.message ||
+          "Payment recorded successfully."
+      );
+
+      setPaymentOrder(null);
+      setPaymentAmount("");
+      setPaymentNote("");
+
+      const updatedOrders =
+        await fetchOrders();
+
+      refreshSelectedOrder(
+        updatedOrders,
+        paymentOrder._id
+      );
+    } catch (err) {
+      console.error(
+        "Add payment error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to record payment."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const advanceOrder = async (
+    order: Order
+  ) => {
+    /*
+     * Delivery completion is special.
+     * Remaining payment must be zero and
+     * customer OTP must be verified.
+     */
+
+    if (
+      order.status ===
+      "OUT_FOR_DELIVERY"
+    ) {
+      const remaining =
+        getRemainingAmount(order);
+
+      if (remaining > 0.001) {
+        setError(
+          `Remaining payment of ${formatMoney(
+            remaining
+          )} must be confirmed before delivery OTP verification.`
+        );
+
+        setMessage("");
+        return;
+      }
+
+      setError("");
+      setMessage("");
+      setDeliveryOtp("");
+      setOtpOrder(order);
+
+      return;
+    }
+
+    const nextStatus =
+      NEXT_STATUS[order.status];
 
     if (!nextStatus) {
       return;
     }
 
-    // ==========================================
-    // DELIVERY PERSON REQUIRED
-    // ==========================================
-    // Admin must assign a delivery person
-    // BEFORE the order can move to Preparing.
-    //
-    // Once assigned, the same requirement
-    // remains for all later delivery stages.
-    // ==========================================
+    /*
+     * Delivery person is required before
+     * Preparing, Ready and Out for Delivery.
+     */
 
     if (
       !order.deliveryPerson &&
@@ -548,6 +781,7 @@ export default function AdminOrdersPage() {
       setError(
         "Please assign a delivery person before continuing the order."
       );
+
       setMessage("");
       return;
     }
@@ -577,6 +811,302 @@ export default function AdminOrdersPage() {
           }
         )
     );
+  };
+
+  const verifyDeliveryOtp = async () => {
+    if (!otpOrder) {
+      return;
+    }
+
+    const otp =
+      deliveryOtp.trim();
+
+    if (!/^\d{6}$/.test(otp)) {
+      setError(
+        "Enter the 6-digit delivery OTP."
+      );
+      return;
+    }
+
+    const remaining =
+      getRemainingAmount(otpOrder);
+
+    if (remaining > 0.001) {
+      setError(
+        `Remaining payment of ${formatMoney(
+          remaining
+        )} must be confirmed first.`
+      );
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(
+        otpOrder._id
+      );
+
+      setError("");
+      setMessage("");
+
+      const verifyResponse =
+        await fetch(
+          `${API_URL}/admin/orders/${otpOrder._id}/verify-otp`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              otp,
+            }),
+          }
+        );
+
+      const verifyData: OrderResponse =
+        await verifyResponse.json();
+
+      if (
+        verifyResponse.status === 401
+      ) {
+        logout();
+        return;
+      }
+
+      if (
+        !verifyResponse.ok ||
+        !verifyData.success
+      ) {
+        throw new Error(
+          verifyData.message ||
+            "Invalid delivery OTP."
+        );
+      }
+
+      const deliveredResponse =
+        await fetch(
+          `${API_URL}/admin/orders/${otpOrder._id}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              status: "DELIVERED",
+            }),
+          }
+        );
+
+      const deliveredData: OrderResponse =
+        await deliveredResponse.json();
+
+      if (
+        !deliveredResponse.ok ||
+        !deliveredData.success
+      ) {
+        throw new Error(
+          deliveredData.message ||
+            "OTP verified, but the order could not be marked delivered."
+        );
+      }
+
+      setMessage(
+        "Delivery OTP verified. Order marked as delivered."
+      );
+
+      setOtpOrder(null);
+      setDeliveryOtp("");
+
+      const updatedOrders =
+        await fetchOrders();
+
+      refreshSelectedOrder(
+        updatedOrders,
+        otpOrder._id
+      );
+    } catch (err) {
+      console.error(
+        "Delivery OTP verification error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to verify delivery OTP."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  /*
+   * CANCEL ORDER
+   *
+   * This uses the existing admin cancellation
+   * endpoint and approves cancellation.
+   */
+  const cancelOrder = async (
+    order: Order
+  ) => {
+    if (
+      [
+        "DELIVERED",
+        "CANCELLED",
+        "OUT_FOR_DELIVERY",
+      ].includes(order.status)
+    ) {
+      setError(
+        "This order cannot be cancelled at this stage."
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Cancel order ${order.orderId}?\n\nThis action will cancel the order.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const note =
+      window.prompt(
+        "Cancellation reason (optional):"
+      ) || "";
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    await runOrderAction(
+      order._id,
+      () =>
+        fetch(
+          `${API_URL}/admin/orders/${order._id}/cancellation`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              action: "APPROVE",
+              note,
+            }),
+          }
+        )
+    );
+  };
+
+  /*
+   * DELETE ORDER
+   *
+   * Requires backend:
+   * DELETE /api/admin/orders/:id
+   */
+  const deleteOrder = async (
+    order: Order
+  ) => {
+    const confirmed =
+      window.confirm(
+        `DELETE ORDER ${order.orderId}?\n\nThis permanently removes the order and its stored order data.\n\nThis cannot be undone.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const secondConfirm =
+      window.confirm(
+        "Are you absolutely sure? Click OK to permanently delete this order."
+      );
+
+    if (!secondConfirm) {
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setActionLoading(
+        order._id
+      );
+
+      setError("");
+      setMessage("");
+
+      const response =
+        await fetch(
+          `${API_URL}/admin/orders/${order._id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+      const data: OrderResponse =
+        await response.json();
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.message ||
+            "Unable to delete order."
+        );
+      }
+
+      setSelectedOrder(null);
+
+      setMessage(
+        data.message ||
+          "Order deleted successfully."
+      );
+
+      await fetchOrders();
+    } catch (err) {
+      console.error(
+        "Delete order error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to delete order."
+      );
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleCancellation = async (
@@ -734,7 +1264,9 @@ export default function AdminOrdersPage() {
     );
 
     setEditDeliveryCharge(
-      String(order.deliveryCharge || 0)
+      String(
+        order.deliveryCharge || 0
+      )
     );
   };
 
@@ -793,7 +1325,9 @@ export default function AdminOrdersPage() {
       Number(editDeliveryCharge);
 
     if (
-      !Number.isFinite(deliveryCharge) ||
+      !Number.isFinite(
+        deliveryCharge
+      ) ||
       deliveryCharge < 0
     ) {
       setError(
@@ -806,29 +1340,34 @@ export default function AdminOrdersPage() {
       setActionLoading(
         editingOrder._id
       );
+
       setError("");
       setMessage("");
 
-      const items = editingOrder.items.map(
-        (item) => ({
-          recipeId:
-            item.recipe?._id,
-          quantity:
-            item.quantity,
-          unit:
-            item.unit,
-          customPrice:
-            item.isCustomRecipe
-              ? item.pricePerUnit
-              : undefined,
-          isCustomRecipe:
-            item.isCustomRecipe,
-        })
-      );
+      const items =
+        editingOrder.items.map(
+          (item) => ({
+            recipeId:
+              item.recipe?._id,
+            quantity:
+              item.quantity,
+            unit:
+              item.unit,
+            customPrice:
+              item.isCustomRecipe
+                ? item.pricePerUnit
+                : undefined,
+            isCustomRecipe:
+              item.isCustomRecipe,
+          })
+        );
 
-      const invalidItem = items.find(
-        (item) => !item.recipeId
-      );
+      const invalidItem =
+        items.find(
+          (item) =>
+            !item.isCustomRecipe &&
+            !item.recipeId
+        );
 
       if (invalidItem) {
         throw new Error(
@@ -836,44 +1375,49 @@ export default function AdminOrdersPage() {
         );
       }
 
-      const response = await fetch(
-        `${API_URL}/admin/orders/${editingOrder._id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            customer: {
-              name: editName.trim(),
-              phone: editPhone.trim(),
-              email:
-                editEmail.trim().toLowerCase(),
+      const response =
+        await fetch(
+          `${API_URL}/admin/orders/${editingOrder._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization: `Bearer ${token}`,
             },
+            body: JSON.stringify({
+              customer: {
+                name:
+                  editName.trim(),
+                phone:
+                  editPhone.trim(),
+                email:
+                  editEmail
+                    .trim()
+                    .toLowerCase(),
+              },
 
-            deliveryAddress:
-              editAddress.trim(),
+              deliveryAddress:
+                editAddress.trim(),
 
-            mapPin:
-              editMapPin.trim(),
+              mapPin:
+                editMapPin.trim(),
 
-            requestedDeliveryDate:
-              editDate,
+              requestedDeliveryDate:
+                editDate,
 
-            requestedDeliveryTime:
-              editTime.trim(),
+              requestedDeliveryTime:
+                editTime.trim(),
 
-            additionalInstructions:
-              editInstructions.trim(),
+              additionalInstructions:
+                editInstructions.trim(),
 
-            items,
+              items,
 
-            deliveryCharge,
-          }),
-        }
-      );
+              deliveryCharge,
+            }),
+          }
+        );
 
       const data: OrderResponse =
         await response.json();
@@ -883,7 +1427,10 @@ export default function AdminOrdersPage() {
         return;
       }
 
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         throw new Error(
           data.message ||
             "Unable to update order."
@@ -978,10 +1525,37 @@ export default function AdminOrdersPage() {
       return "Confirm Order";
     }
 
+    if (
+      order.status ===
+      "OUT_FOR_DELIVERY"
+    ) {
+      return "Verify OTP & Deliver";
+    }
+
     return (
       NEXT_STATUS_LABEL[
         order.status
       ] || ""
+    );
+  };
+
+  /*
+   * IMPORTANT:
+   *
+   * CUSTOMER_CONFIRMED is NOT included here.
+   *
+   * That prevents the duplicate Confirm Order
+   * button that appeared in your screenshot.
+   */
+  const hasActionButton = (
+    order: Order
+  ) => {
+    return (
+      order.status ===
+        "OUT_FOR_DELIVERY" ||
+      Boolean(
+        NEXT_STATUS[order.status]
+      )
     );
   };
 
@@ -1021,12 +1595,20 @@ export default function AdminOrdersPage() {
           {order.deliveryPerson ? (
             <div>
               <p className="font-bold">
-                {order.deliveryPerson.name}
+                {
+                  order
+                    .deliveryPerson
+                    .name
+                }
               </p>
 
               <p className="mt-1 text-sm text-zinc-600">
                 Phone:{" "}
-                {order.deliveryPerson.phone}
+                {
+                  order
+                    .deliveryPerson
+                    .phone
+                }
               </p>
 
               {order.deliveryPerson
@@ -1034,7 +1616,8 @@ export default function AdminOrdersPage() {
                 <p className="mt-1 text-sm text-zinc-600">
                   WhatsApp:{" "}
                   {
-                    order.deliveryPerson
+                    order
+                      .deliveryPerson
                       .whatsapp
                   }
                 </p>
@@ -1049,7 +1632,9 @@ export default function AdminOrdersPage() {
           {![
             "DELIVERED",
             "CANCELLED",
-          ].includes(order.status) && (
+          ].includes(
+            order.status
+          ) && (
             <div className="mt-4">
               <label
                 htmlFor={`delivery-${order._id}`}
@@ -1093,8 +1678,13 @@ export default function AdminOrdersPage() {
                       key={person._id}
                       value={person._id}
                     >
-                      {person.name} —{" "}
-                      {person.phone}
+                      {
+                        person.name
+                      }{" "}
+                      —{" "}
+                      {
+                        person.phone
+                      }
                     </option>
                   ))}
               </select>
@@ -1107,6 +1697,8 @@ export default function AdminOrdersPage() {
 
   return (
     <main className="min-h-screen bg-orange-50 text-zinc-900">
+      {/* HEADER */}
+
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
           <div>
@@ -1141,6 +1733,8 @@ export default function AdminOrdersPage() {
         </div>
       </header>
 
+      {/* MAIN */}
+
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
@@ -1155,8 +1749,8 @@ export default function AdminOrdersPage() {
             <p className="mt-3 max-w-2xl text-zinc-600">
               Review customer orders,
               confirmations, requests,
-              delivery assignments, and
-              delivery progress.
+              delivery assignments, payments,
+              and delivery progress.
             </p>
           </div>
 
@@ -1175,17 +1769,23 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
+        {/* ERROR */}
+
         {error && (
           <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
 
+        {/* SUCCESS */}
+
         {message && (
           <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
             {message}
           </div>
         )}
+
+        {/* COUNTS */}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <button
@@ -1258,6 +1858,8 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
+        {/* SEARCH */}
+
         <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[1fr_240px]">
             <div>
@@ -1328,8 +1930,8 @@ export default function AdminOrdersPage() {
 
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-500">
             <span>
-              {filteredOrders.length} matching
-              order
+              {filteredOrders.length}{" "}
+              matching order
               {filteredOrders.length ===
               1
                 ? ""
@@ -1363,6 +1965,8 @@ export default function AdminOrdersPage() {
             )}
           </div>
         </div>
+
+        {/* ORDER LIST */}
 
         <div className="mt-8">
           {loading ? (
@@ -1474,6 +2078,45 @@ export default function AdminOrdersPage() {
                                 )}
                               </span>
                             </div>
+
+                            <div>
+                              <span className="font-semibold">
+                                Paid / Remaining:
+                              </span>{" "}
+                              {formatMoney(
+                                getPaidAmount(
+                                  order
+                                )
+                              )}{" "}
+                              /{" "}
+                              {formatMoney(
+                                getRemainingAmount(
+                                  order
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          {/* DELIVERY ADDRESS */}
+
+                          <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
+                              Delivery Address
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-zinc-800">
+                              {order.deliveryAddress ||
+                                "No address provided"}
+                            </p>
+
+                            {order.mapPin && (
+                              <p className="mt-2 break-all text-xs text-zinc-500">
+                                Map Pin:{" "}
+                                {
+                                  order.mapPin
+                                }
+                              </p>
+                            )}
                           </div>
 
                           {order.deliveryPerson && (
@@ -1503,7 +2146,8 @@ export default function AdminOrdersPage() {
 
                               <p className="mt-1 text-sm text-red-700">
                                 {
-                                  order.cancellationRequestMessage
+                                  order.cancellationRequestMessage ||
+                                  "Customer requested cancellation."
                                 }
                               </p>
                             </div>
@@ -1517,7 +2161,8 @@ export default function AdminOrdersPage() {
 
                               <p className="mt-1 text-sm text-yellow-800">
                                 {
-                                  order.changeRequestMessage
+                                  order.changeRequestMessage ||
+                                  "Customer requested an order change."
                                 }
                               </p>
                             </div>
@@ -1579,9 +2224,9 @@ export default function AdminOrdersPage() {
                               </button>
                             )}
 
-                          {NEXT_STATUS[
-                            order.status
-                          ] && (
+                          {hasActionButton(
+                            order
+                          ) && (
                             <button
                               type="button"
                               disabled={
@@ -1722,6 +2367,8 @@ export default function AdminOrdersPage() {
         </div>
       </section>
 
+      {/* ORDER DETAILS MODAL */}
+
       {selectedOrder && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4 sm:p-8">
           <div className="mx-auto max-w-4xl rounded-3xl bg-white shadow-2xl">
@@ -1752,6 +2399,8 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="space-y-7 p-6">
+              {/* STATUS */}
+
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_CLASSES[selectedOrder.status]}`}
@@ -1789,6 +2438,8 @@ export default function AdminOrdersPage() {
                     : "Not Confirmed"}
                 </span>
               </div>
+
+              {/* CUSTOMER */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -1832,6 +2483,8 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
+              {/* DELIVERY */}
+
               <section>
                 <h3 className="text-lg font-bold">
                   Delivery
@@ -1843,7 +2496,8 @@ export default function AdminOrdersPage() {
                       Address:
                     </span>{" "}
                     {
-                      selectedOrder.deliveryAddress
+                      selectedOrder.deliveryAddress ||
+                      "No address provided"
                     }
                   </p>
 
@@ -1891,9 +2545,13 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
+              {/* DELIVERY PERSON */}
+
               {renderDeliverySection(
                 selectedOrder
               )}
+
+              {/* ORDER ITEMS */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -1941,10 +2599,34 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
+              {/* PAYMENT */}
+
               <section>
-                <h3 className="text-lg font-bold">
-                  Price Summary
-                </h3>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-bold">
+                    Price & Payment
+                  </h3>
+
+                  {getRemainingAmount(
+                    selectedOrder
+                  ) > 0.001 && (
+                    <button
+                      type="button"
+                      disabled={
+                        actionLoading ===
+                        selectedOrder._id
+                      }
+                      onClick={() =>
+                        openPayment(
+                          selectedOrder
+                        )
+                      }
+                      className="rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Add Payment
+                    </button>
+                  )}
+                </div>
 
                 <div className="mt-3 rounded-2xl bg-zinc-50 p-4">
                   <div className="flex justify-between text-sm">
@@ -1982,8 +2664,122 @@ export default function AdminOrdersPage() {
                       )}
                     </span>
                   </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                        Paid
+                      </p>
+
+                      <p className="mt-1 font-bold text-green-700">
+                        {formatMoney(
+                          getPaidAmount(
+                            selectedOrder
+                          )
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                        Remaining
+                      </p>
+
+                      <p className="mt-1 font-bold text-orange-700">
+                        {formatMoney(
+                          getRemainingAmount(
+                            selectedOrder
+                          )
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                        Payment Status
+                      </p>
+
+                      <p className="mt-1 font-bold">
+                        {getPaymentStatus(
+                          selectedOrder
+                        ).replace(
+                          "_",
+                          " "
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedOrder.paymentHistory &&
+                    selectedOrder
+                      .paymentHistory
+                      .length > 0 && (
+                      <div className="mt-5">
+                        <p className="text-sm font-bold">
+                          Payment History
+                        </p>
+
+                        <div className="mt-2 space-y-2">
+                          {selectedOrder.paymentHistory
+                            .slice()
+                            .reverse()
+                            .map(
+                              (
+                                payment,
+                                index
+                              ) => (
+                                <div
+                                  key={
+                                    payment._id ||
+                                    `${payment.recordedAt}-${index}`
+                                  }
+                                  className="rounded-xl border border-zinc-200 bg-white p-3 text-sm"
+                                >
+                                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="font-semibold">
+                                      {formatMoney(
+                                        payment.amount
+                                      )}{" "}
+                                      ·{" "}
+                                      {payment.method.replace(
+                                        "_",
+                                        " "
+                                      )}
+                                    </span>
+
+                                    <span className="text-xs text-zinc-500">
+                                      {formatDateTime(
+                                        payment.recordedAt
+                                      )}
+                                    </span>
+                                  </div>
+
+                                  {payment.note && (
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                      {
+                                        payment.note
+                                      }
+                                    </p>
+                                  )}
+
+                                  {payment.recordedBy && (
+                                    <p className="mt-1 text-xs text-zinc-400">
+                                      Recorded by:{" "}
+                                      {
+                                        payment.recordedBy
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                              )
+                            )}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </section>
+
+              {/* CANCELLATION */}
 
               {selectedOrder.cancellationRequested && (
                 <section className="rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -1993,7 +2789,8 @@ export default function AdminOrdersPage() {
 
                   <p className="mt-2 text-sm text-red-700">
                     {
-                      selectedOrder.cancellationRequestMessage
+                      selectedOrder.cancellationRequestMessage ||
+                      "Customer requested cancellation."
                     }
                   </p>
 
@@ -2035,6 +2832,8 @@ export default function AdminOrdersPage() {
                 </section>
               )}
 
+              {/* CHANGE REQUEST */}
+
               {selectedOrder.changeRequested && (
                 <section className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
                   <h3 className="font-bold text-yellow-800">
@@ -2043,21 +2842,23 @@ export default function AdminOrdersPage() {
 
                   <p className="mt-2 text-sm text-yellow-800">
                     {
-                      selectedOrder.changeRequestMessage
+                      selectedOrder.changeRequestMessage ||
+                      "Customer requested an order change."
                     }
                   </p>
 
                   <p className="mt-3 text-xs text-yellow-700">
                     Edit the order using
                     the Edit Order button.
-                    Saving the changes
-                    will reset customer
-                    confirmation and
-                    require confirmation
-                    again.
+                    Saving changes resets
+                    customer confirmation
+                    and requires the customer
+                    to confirm again.
                   </p>
                 </section>
               )}
+
+              {/* STATUS HISTORY */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -2113,6 +2914,8 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
+              {/* ACTIONS */}
+
               <div className="flex flex-wrap gap-3 border-t border-zinc-100 pt-6">
                 {![
                   "DELIVERED",
@@ -2133,6 +2936,34 @@ export default function AdminOrdersPage() {
                   </button>
                 )}
 
+                {/* CANCEL ORDER */}
+
+                {![
+                  "DELIVERED",
+                  "CANCELLED",
+                  "OUT_FOR_DELIVERY",
+                ].includes(
+                  selectedOrder.status
+                ) && (
+                  <button
+                    type="button"
+                    disabled={
+                      actionLoading ===
+                      selectedOrder._id
+                    }
+                    onClick={() =>
+                      void cancelOrder(
+                        selectedOrder
+                      )
+                    }
+                    className="rounded-full border border-red-200 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Cancel Order
+                  </button>
+                )}
+
+                {/* CONFIRM ORDER */}
+
                 {selectedOrder.status ===
                   "CUSTOMER_CONFIRMED" &&
                   !selectedOrder.adminConfirmed && (
@@ -2149,13 +2980,18 @@ export default function AdminOrdersPage() {
                       }
                       className="rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
                     >
-                      Confirm Order
+                      {actionLoading ===
+                      selectedOrder._id
+                        ? "Updating..."
+                        : "Confirm Order"}
                     </button>
                   )}
 
-                {NEXT_STATUS[
-                  selectedOrder.status
-                ] && (
+                {/* NEXT STATUS */}
+
+                {hasActionButton(
+                  selectedOrder
+                ) && (
                   <button
                     type="button"
                     disabled={
@@ -2169,18 +3005,356 @@ export default function AdminOrdersPage() {
                     }
                     className="rounded-full bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50"
                   >
-                    {
-                      NEXT_STATUS_LABEL[
-                        selectedOrder.status
-                      ]
-                    }
+                    {actionLoading ===
+                    selectedOrder._id
+                      ? "Updating..."
+                      : getActionText(
+                          selectedOrder
+                        )}
                   </button>
                 )}
+
+                {/* DELETE */}
+
+                <button
+                  type="button"
+                  disabled={
+                    actionLoading ===
+                    selectedOrder._id
+                  }
+                  onClick={() =>
+                    void deleteOrder(
+                      selectedOrder
+                    )
+                  }
+                  className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {actionLoading ===
+                  selectedOrder._id
+                    ? "Processing..."
+                    : "Delete Order"}
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* PAYMENT MODAL */}
+
+      {paymentOrder && (
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/40 p-4 sm:p-8">
+          <div className="mx-auto max-w-lg rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-green-600">
+                  Record Payment
+                </p>
+
+                <h2 className="mt-1 text-2xl font-bold">
+                  {
+                    paymentOrder.orderId
+                  }
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaymentOrder(
+                    null
+                  )
+                }
+                className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-5 p-6">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Grand Total
+                  </p>
+
+                  <p className="mt-1 text-lg font-bold">
+                    {formatMoney(
+                      paymentOrder.grandTotal
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Remaining
+                  </p>
+
+                  <p className="mt-1 text-lg font-bold text-orange-600">
+                    {formatMoney(
+                      getRemainingAmount(
+                        paymentOrder
+                      )
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold">
+                  Payment Amount
+                </label>
+
+                <input
+                  type="number"
+                  min="0.01"
+                  max={getRemainingAmount(
+                    paymentOrder
+                  )}
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(event) =>
+                    setPaymentAmount(
+                      event.target.value
+                    )
+                  }
+                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold">
+                  Payment Method
+                </label>
+
+                <select
+                  value={paymentMethod}
+                  onChange={(event) =>
+                    setPaymentMethod(
+                      event.target
+                        .value as typeof paymentMethod
+                    )
+                  }
+                  className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                >
+                  <option value="UPI">
+                    UPI
+                  </option>
+
+                  <option value="CASH">
+                    Cash
+                  </option>
+
+                  <option value="BANK_TRANSFER">
+                    Bank Transfer
+                  </option>
+
+                  <option value="OTHER">
+                    Other
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold">
+                  Note (optional)
+                </label>
+
+                <textarea
+                  rows={3}
+                  value={paymentNote}
+                  onChange={(event) =>
+                    setPaymentNote(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Payment reference or note"
+                  className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+              </div>
+
+              <div className="flex gap-3 border-t border-zinc-100 pt-5">
+                <button
+                  type="button"
+                  disabled={
+                    actionLoading ===
+                    paymentOrder._id
+                  }
+                  onClick={() =>
+                    void addPayment()
+                  }
+                  className="flex-1 rounded-full bg-green-600 px-5 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  {actionLoading ===
+                  paymentOrder._id
+                    ? "Saving..."
+                    : "Confirm Payment"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    actionLoading ===
+                    paymentOrder._id
+                  }
+                  onClick={() =>
+                    setPaymentOrder(
+                      null
+                    )
+                  }
+                  className="rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELIVERY OTP MODAL */}
+
+      {otpOrder && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+            <div className="border-b border-zinc-100 px-6 py-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                Delivery Verification
+              </p>
+
+              <h2 className="mt-1 text-2xl font-bold">
+                {otpOrder.orderId}
+              </h2>
+            </div>
+
+            <div className="space-y-5 p-6">
+              <div className="rounded-2xl bg-green-50 p-4 text-sm text-green-800">
+                Remaining payment is confirmed at{" "}
+                <strong>
+                  {formatMoney(
+                    getRemainingAmount(
+                      otpOrder
+                    )
+                  )}
+                </strong>
+                .
+                <br />
+                Enter the 6-digit OTP provided
+                by the customer to complete
+                delivery.
+              </div>
+
+              <div className="rounded-2xl bg-zinc-50 p-4 text-sm">
+                <div className="flex justify-between">
+                  <span>
+                    Order Total
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      otpOrder.grandTotal
+                    )}
+                  </strong>
+                </div>
+
+                <div className="mt-2 flex justify-between">
+                  <span>
+                    Paid
+                  </span>
+
+                  <strong className="text-green-700">
+                    {formatMoney(
+                      getPaidAmount(
+                        otpOrder
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div className="mt-2 flex justify-between">
+                  <span>
+                    Remaining
+                  </span>
+
+                  <strong className="text-green-700">
+                    {formatMoney(
+                      getRemainingAmount(
+                        otpOrder
+                      )
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="delivery-otp"
+                  className="block text-sm font-semibold"
+                >
+                  Delivery OTP
+                </label>
+
+                <input
+                  id="delivery-otp"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoFocus
+                  value={deliveryOtp}
+                  onChange={(event) =>
+                    setDeliveryOtp(
+                      event.target.value
+                        .replace(
+                          /\D/g,
+                          ""
+                        )
+                        .slice(0, 6)
+                    )
+                  }
+                  placeholder="Enter 6-digit OTP"
+                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div className="flex gap-3 border-t border-zinc-100 pt-5">
+                <button
+                  type="button"
+                  disabled={
+                    actionLoading ===
+                      otpOrder._id ||
+                    deliveryOtp.length !==
+                      6
+                  }
+                  onClick={() =>
+                    void verifyDeliveryOtp()
+                  }
+                  className="flex-1 rounded-full bg-indigo-600 px-5 py-3 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoading ===
+                  otpOrder._id
+                    ? "Verifying..."
+                    : "Verify OTP & Deliver"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    actionLoading ===
+                    otpOrder._id
+                  }
+                  onClick={() =>
+                    setOtpOrder(null)
+                  }
+                  className="rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT ORDER MODAL */}
 
       {editingOrder && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 p-4 sm:p-8">
@@ -2215,6 +3389,8 @@ export default function AdminOrdersPage() {
               onSubmit={saveOrderEdit}
               className="space-y-6 p-6"
             >
+              {/* CUSTOMER DETAILS */}
+
               <div>
                 <h3 className="text-lg font-bold">
                   Customer Details
@@ -2235,8 +3411,7 @@ export default function AdminOrdersPage() {
                       value={editName}
                       onChange={(event) =>
                         setEditName(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2257,8 +3432,7 @@ export default function AdminOrdersPage() {
                       value={editPhone}
                       onChange={(event) =>
                         setEditPhone(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2279,8 +3453,7 @@ export default function AdminOrdersPage() {
                       value={editEmail}
                       onChange={(event) =>
                         setEditEmail(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2288,6 +3461,8 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
               </div>
+
+              {/* DELIVERY DETAILS */}
 
               <div>
                 <h3 className="text-lg font-bold">
@@ -2309,8 +3484,7 @@ export default function AdminOrdersPage() {
                       value={editAddress}
                       onChange={(event) =>
                         setEditAddress(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2331,10 +3505,10 @@ export default function AdminOrdersPage() {
                       value={editMapPin}
                       onChange={(event) =>
                         setEditMapPin(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
+                      placeholder="Google Maps link (optional)"
                       className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
@@ -2354,8 +3528,7 @@ export default function AdminOrdersPage() {
                         value={editDate}
                         onChange={(event) =>
                           setEditDate(
-                            event.target
-                              .value
+                            event.target.value
                           )
                         }
                         className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2376,8 +3549,7 @@ export default function AdminOrdersPage() {
                         value={editTime}
                         onChange={(event) =>
                           setEditTime(
-                            event.target
-                              .value
+                            event.target.value
                           )
                         }
                         placeholder="7:00 PM"
@@ -2402,8 +3574,7 @@ export default function AdminOrdersPage() {
                       }
                       onChange={(event) =>
                         setEditInstructions(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2411,6 +3582,8 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
               </div>
+
+              {/* PRICE */}
 
               <div>
                 <h3 className="text-lg font-bold">
@@ -2435,8 +3608,7 @@ export default function AdminOrdersPage() {
                     }
                     onChange={(event) =>
                       setEditDeliveryCharge(
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                     className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -2491,6 +3663,8 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
+              {/* WARNING */}
+
               <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                 <strong>
                   Important:
@@ -2501,6 +3675,8 @@ export default function AdminOrdersPage() {
                 The customer must confirm
                 the updated order again.
               </div>
+
+              {/* SAVE */}
 
               <div className="flex flex-col gap-3 border-t border-zinc-100 pt-6 sm:flex-row">
                 <button
