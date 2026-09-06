@@ -180,8 +180,7 @@ export default function AdminPage() {
         }
       );
 
-      const data: UploadResponse =
-        await response.json();
+      const data: UploadResponse = await response.json();
 
       if (response.status === 401) {
         logout();
@@ -360,9 +359,7 @@ export default function AdminPage() {
     setEditingId(recipe._id);
     setName(recipe.name);
     setDescription(recipe.description || "");
-    setPhotos(
-      (recipe.photos || []).join("\n")
-    );
+    setPhotos((recipe.photos || []).join("\n"));
     setPrice(String(recipe.price));
     setUnit(recipe.unit);
     setIsAvailable(recipe.isAvailable);
@@ -538,9 +535,9 @@ export default function AdminPage() {
     <main className="min-h-screen bg-orange-50 text-zinc-900">
       {/* HEADER */}
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between lg:gap-3 lg:px-8">
           <div>
-            <div className="text-2xl font-bold tracking-tight text-orange-600">
+            <div className="text-xl font-bold tracking-tight text-orange-600 sm:text-2xl">
               Sparsha Kitchen
             </div>
 
@@ -549,14 +546,14 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full flex-wrap gap-2 sm:gap-3 lg:w-auto lg:justify-end">
             {/* RECIPES */}
             <button
               type="button"
               onClick={() =>
                 router.push("/admin")
               }
-              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+              className="rounded-full border border-orange-200 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Recipes
             </button>
@@ -567,7 +564,7 @@ export default function AdminPage() {
               onClick={() =>
                 router.push("/admin/orders")
               }
-              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+              className="rounded-full border border-orange-200 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Orders
             </button>
@@ -580,7 +577,7 @@ export default function AdminPage() {
                   "/admin/delivery-team"
                 )
               }
-              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+              className="rounded-full border border-orange-200 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Delivery Team
             </button>
@@ -593,7 +590,7 @@ export default function AdminPage() {
                   "/admin/business-settings"
                 )
               }
-              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+              className="rounded-full border border-orange-200 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Business Settings
             </button>
@@ -602,7 +599,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              className="rounded-full border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Logout
             </button>
@@ -611,17 +608,17 @@ export default function AdminPage() {
       </header>
 
       {/* DASHBOARD */}
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div>
           <p className="font-semibold uppercase tracking-wide text-orange-600">
             Dashboard
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold tracking-tight">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             Manage Recipes
           </h1>
 
-          <p className="mt-3 max-w-2xl text-zinc-600">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
             Create, update, activate, deactivate,
             and remove recipes displayed on the
             Sparsha Kitchen website.
@@ -630,21 +627,21 @@ export default function AdminPage() {
 
         {/* ERROR */}
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 sm:mt-8">
             {error}
           </div>
         )}
 
         {/* SUCCESS MESSAGE */}
         {message && (
-          <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+          <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700 sm:mt-8">
             {message}
           </div>
         )}
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[420px_1fr]">
+        <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[420px_1fr] lg:gap-8">
           {/* ADD / EDIT RECIPE */}
-          <div className="h-fit rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
+          <div className="h-fit rounded-3xl border border-orange-100 bg-white p-5 shadow-sm sm:p-7">
             <div>
               <p className="font-semibold uppercase tracking-wide text-orange-600">
                 {editingId
@@ -652,7 +649,7 @@ export default function AdminPage() {
                   : "Add Recipe"}
               </p>
 
-              <h2 className="mt-2 text-2xl font-bold">
+              <h2 className="mt-2 text-xl font-bold sm:text-2xl">
                 {editingId
                   ? "Update recipe"
                   : "Create a new recipe"}
@@ -661,7 +658,7 @@ export default function AdminPage() {
 
             <form
               onSubmit={handleSubmit}
-              className="mt-7 space-y-5"
+              className="mt-6 space-y-5 sm:mt-7"
             >
               {/* RECIPE NAME */}
               <div>
@@ -677,9 +674,7 @@ export default function AdminPage() {
                   type="text"
                   value={name}
                   onChange={(event) =>
-                    setName(
-                      event.target.value
-                    )
+                    setName(event.target.value)
                   }
                   placeholder="Example: Chicken Biryani"
                   className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
@@ -711,7 +706,7 @@ export default function AdminPage() {
 
               {/* PHOTO URLS + CAMERA ICON */}
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="photos"
                     className="block text-sm font-semibold"
@@ -719,7 +714,7 @@ export default function AdminPage() {
                     Photo URLs
                   </label>
 
-                  <div>
+                  <div className="shrink-0">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -762,7 +757,7 @@ export default function AdminPage() {
                   className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
 
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs leading-5 text-zinc-500">
                   Add one image URL per line or
                   click 📷 to upload.
                 </p>
@@ -888,8 +883,8 @@ export default function AdminPage() {
           </div>
 
           {/* RECIPES */}
-          <div>
-            <div className="mb-5 flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">
                   Recipes
@@ -909,14 +904,14 @@ export default function AdminPage() {
                   void fetchRecipes()
                 }
                 disabled={loading}
-                className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                className="w-full rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
               >
                 Refresh
               </button>
             </div>
 
             {loading ? (
-              <div className="rounded-3xl border border-orange-100 bg-white p-12 text-center shadow-sm">
+              <div className="rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-sm sm:p-12">
                 <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600" />
 
                 <p className="mt-5 text-zinc-600">
@@ -924,8 +919,8 @@ export default function AdminPage() {
                 </p>
               </div>
             ) : recipes.length === 0 ? (
-              <div className="rounded-3xl border border-orange-100 bg-white p-12 text-center shadow-sm">
-                <div className="text-6xl">
+              <div className="rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-sm sm:p-12">
+                <div className="text-5xl sm:text-6xl">
                   🍲
                 </div>
 
@@ -945,11 +940,11 @@ export default function AdminPage() {
                     key={recipe._id}
                     className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"
                   >
-                    <div className="p-6">
+                    <div className="p-5 sm:p-6">
                       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-xl font-bold">
+                            <h3 className="break-words text-lg font-bold sm:text-xl">
                               {recipe.name}
                             </h3>
 
@@ -1009,7 +1004,7 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
                           <button
                             type="button"
                             onClick={() =>
@@ -1017,7 +1012,7 @@ export default function AdminPage() {
                                 recipe
                               )
                             }
-                            className="rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                            className="flex-1 rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50 sm:flex-none"
                           >
                             Edit
                           </button>
@@ -1029,14 +1024,14 @@ export default function AdminPage() {
                                 recipe
                               )
                             }
-                            className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                            className="flex-1 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 sm:flex-none"
                           >
                             Delete
                           </button>
                         </div>
                       </div>
 
-                      <div className="mt-6 flex flex-wrap gap-3 border-t border-zinc-100 pt-5">
+                      <div className="mt-6 flex flex-col gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:flex-wrap">
                         <button
                           type="button"
                           onClick={() =>
@@ -1044,7 +1039,7 @@ export default function AdminPage() {
                               recipe
                             )
                           }
-                          className="rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100"
+                          className="w-full rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 sm:w-auto"
                         >
                           {recipe.isAvailable
                             ? "Mark Unavailable"
@@ -1058,7 +1053,7 @@ export default function AdminPage() {
                               recipe
                             )
                           }
-                          className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200"
+                          className="w-full rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 sm:w-auto"
                         >
                           {recipe.isActive
                             ? "Hide from Website"

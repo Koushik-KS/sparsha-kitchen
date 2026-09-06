@@ -397,11 +397,11 @@ export default function DeliveryTeamPage() {
   };
 
   return (
-    <main className="min-h-screen bg-orange-50 text-zinc-900">
+    <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 lg:px-8">
-          <div>
-            <div className="text-2xl font-bold tracking-tight text-orange-600">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:flex-nowrap sm:px-6 sm:py-5 lg:px-8">
+          <div className="min-w-0">
+            <div className="text-xl font-bold tracking-tight text-orange-600 sm:text-2xl">
               Sparsha Kitchen
             </div>
 
@@ -410,11 +410,11 @@ export default function DeliveryTeamPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
             <button
               type="button"
               onClick={() => router.push("/admin")}
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              className="w-full rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto sm:px-4 sm:text-sm"
             >
               Recipes
             </button>
@@ -424,7 +424,7 @@ export default function DeliveryTeamPage() {
               onClick={() =>
                 router.push("/admin/orders")
               }
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              className="w-full rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto sm:px-4 sm:text-sm"
             >
               Orders
             </button>
@@ -432,7 +432,7 @@ export default function DeliveryTeamPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              className="w-full rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto sm:px-4 sm:text-sm"
             >
               Logout
             </button>
@@ -440,45 +440,45 @@ export default function DeliveryTeamPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
-        <div className="mb-8">
+      <section className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+        <div className="mb-7 sm:mb-8">
           <p className="font-semibold uppercase tracking-wide text-orange-600">
             Delivery Management
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold tracking-tight">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             Delivery Team
           </h1>
 
-          <p className="mt-3 max-w-2xl text-zinc-600">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
             Add and manage delivery people. Active delivery
             people will appear in the order assignment dropdown.
           </p>
         </div>
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+          <div className="mb-5 break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700">
+          <div className="mb-5 break-words rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700">
             {message}
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
-          <section className="h-fit rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[380px_1fr] lg:gap-8">
+          <section className="h-fit rounded-3xl border border-orange-100 bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <h2 className="text-xl font-bold">
                   {editingId
                     ? "Edit Delivery Person"
                     : "Add Delivery Person"}
                 </h2>
 
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1 text-sm leading-5 text-zinc-500">
                   {editingId
                     ? "Update the delivery person's details."
                     : "Add a new person to your delivery team."}
@@ -489,7 +489,7 @@ export default function DeliveryTeamPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="text-sm font-semibold text-zinc-500 hover:text-zinc-900"
+                  className="shrink-0 text-sm font-semibold text-zinc-500 hover:text-zinc-900"
                 >
                   Cancel
                 </button>
@@ -515,7 +515,7 @@ export default function DeliveryTeamPage() {
                     setName(event.target.value)
                   }
                   placeholder="Ravi Kumar"
-                  className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
@@ -535,7 +535,7 @@ export default function DeliveryTeamPage() {
                   }
                   placeholder="9876543210"
                   inputMode="tel"
-                  className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
@@ -555,26 +555,26 @@ export default function DeliveryTeamPage() {
                   }
                   placeholder="9876543210"
                   inputMode="tel"
-                  className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-50 p-4">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-zinc-50 p-4">
                 <input
                   type="checkbox"
                   checked={isActive}
                   onChange={(event) =>
                     setIsActive(event.target.checked)
                   }
-                  className="h-4 w-4"
+                  className="mt-0.5 h-4 w-4 shrink-0"
                 />
 
-                <span>
+                <span className="min-w-0">
                   <span className="block text-sm font-semibold">
                     Active delivery person
                   </span>
 
-                  <span className="mt-1 block text-xs text-zinc-500">
+                  <span className="mt-1 block text-xs leading-5 text-zinc-500">
                     Active people can be assigned to orders.
                   </span>
                 </span>
@@ -594,9 +594,9 @@ export default function DeliveryTeamPage() {
             </form>
           </section>
 
-          <section>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
+          <section className="min-w-0">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <h2 className="text-xl font-bold">
                   Delivery People
                 </h2>
@@ -616,23 +616,23 @@ export default function DeliveryTeamPage() {
                   void fetchDeliveryPersons()
                 }
                 disabled={loading}
-                className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                className="w-full rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
               >
                 {loading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
 
             {loading ? (
-              <div className="rounded-3xl border border-orange-100 bg-white p-8 text-center text-sm text-zinc-500">
+              <div className="rounded-3xl border border-orange-100 bg-white p-6 text-center text-sm text-zinc-500 sm:p-8">
                 Loading delivery team...
               </div>
             ) : deliveryPersons.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-orange-200 bg-white p-10 text-center">
+              <div className="rounded-3xl border border-dashed border-orange-200 bg-white p-7 text-center sm:p-10">
                 <h3 className="text-lg font-bold">
                   No delivery people yet
                 </h3>
 
-                <p className="mt-2 text-sm text-zinc-500">
+                <p className="mt-2 text-sm leading-5 text-zinc-500">
                   Use the form to add your first delivery person.
                 </p>
               </div>
@@ -641,17 +641,17 @@ export default function DeliveryTeamPage() {
                 {deliveryPersons.map((person) => (
                   <article
                     key={person._id}
-                    className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
+                    className="min-w-0 rounded-3xl border border-orange-100 bg-white p-4 shadow-sm sm:p-5"
                   >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-bold">
+                          <h3 className="max-w-full break-words text-lg font-bold">
                             {person.name}
                           </h3>
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
                               person.isActive
                                 ? "bg-green-100 text-green-700"
                                 : "bg-zinc-100 text-zinc-500"
@@ -663,18 +663,18 @@ export default function DeliveryTeamPage() {
                           </span>
                         </div>
 
-                        <p className="mt-2 text-sm text-zinc-600">
+                        <p className="mt-2 break-words text-sm text-zinc-600">
                           Phone: {person.phone}
                         </p>
 
                         {person.whatsapp && (
-                          <p className="mt-1 text-sm text-zinc-600">
+                          <p className="mt-1 break-words text-sm text-zinc-600">
                             WhatsApp: {person.whatsapp}
                           </p>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
                         {/* EDIT */}
                         <button
                           type="button"
@@ -682,7 +682,7 @@ export default function DeliveryTeamPage() {
                             startEdit(person)
                           }
                           disabled={saving}
-                          className="rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                          className="w-full rounded-full border border-orange-200 px-4 py-2.5 text-sm font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-50 sm:w-auto"
                         >
                           Edit
                         </button>
@@ -694,7 +694,7 @@ export default function DeliveryTeamPage() {
                             void toggleActive(person)
                           }
                           disabled={saving}
-                          className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                          className="w-full rounded-full border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
                         >
                           {person.isActive
                             ? "Set Inactive"
@@ -710,7 +710,7 @@ export default function DeliveryTeamPage() {
                             )
                           }
                           disabled={saving}
-                          className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          className="w-full rounded-full border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 sm:w-auto"
                         >
                           Delete
                         </button>

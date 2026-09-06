@@ -2114,7 +2114,7 @@ export default function TrackOrderClient() {
                   <span className="shrink-0 text-right font-semibold">
                     {Number(order.deliveryCharge || 0) > 0
                       ? `₹${Number(order.deliveryCharge).toFixed(2)}`
-                      : "Will be shown when Admin confirms your order"}
+                      : "Will be shown when Admin confirms your order after confirm the order"}
                   </span>
                 </div>
 

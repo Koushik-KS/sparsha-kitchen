@@ -134,12 +134,12 @@ export default function CustomRecipePage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white px-4 py-10 sm:px-6 sm:py-16">
+      <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white px-4 py-8 sm:px-6 sm:py-16">
         <div className="mx-auto w-full max-w-2xl">
           <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl">
             <div className="h-1.5 bg-orange-500" />
 
-            <div className="p-6 sm:p-10">
+            <div className="p-5 sm:p-10">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-50 ring-8 ring-green-50/60">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                   <span className="text-3xl font-bold text-green-600">
@@ -158,13 +158,13 @@ export default function CustomRecipePage() {
                 Order page.
               </p>
 
-              <div className="mt-8 rounded-2xl border border-orange-200 bg-orange-50 p-6">
+              <div className="mt-7 rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:mt-8 sm:p-6">
                 <p className="text-center text-xs font-semibold uppercase tracking-widest text-orange-700">
                   Your Track ID
                 </p>
 
-                <div className="mt-3 rounded-xl border border-orange-200 bg-white px-4 py-4">
-                  <p className="break-all text-center text-xl font-bold tracking-wider text-gray-900 sm:text-2xl">
+                <div className="mt-3 rounded-xl border border-orange-200 bg-white px-3 py-4 sm:px-4">
+                  <p className="break-all text-center text-lg font-bold tracking-wider text-gray-900 sm:text-2xl">
                     {success.trackId || "Track ID unavailable"}
                   </p>
                 </div>
@@ -174,12 +174,12 @@ export default function CustomRecipePage() {
                 </p>
               </div>
 
-              <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
+              <div className="mt-4 flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm font-medium text-gray-700">
                   Current Status
                 </span>
 
-                <span className="rounded-full bg-yellow-100 px-3 py-1.5 text-xs font-bold text-yellow-700">
+                <span className="w-fit rounded-full bg-yellow-100 px-3 py-1.5 text-xs font-bold text-yellow-700">
                   {success.status}
                 </span>
               </div>
@@ -189,12 +189,12 @@ export default function CustomRecipePage() {
                   Recipe
                 </p>
 
-                <p className="mt-1 text-base font-semibold text-gray-900">
+                <p className="mt-1 break-words text-base font-semibold text-gray-900">
                   {success.recipeName}
                 </p>
               </div>
 
-              <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 grid gap-3 sm:mt-7 sm:grid-cols-2">
                 <a
                   href="/track-order"
                   className="flex min-h-12 items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 hover:shadow-md"
@@ -226,9 +226,9 @@ export default function CustomRecipePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white px-4 py-8 sm:px-6 sm:py-12">
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white px-4 py-6 sm:px-6 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-8 text-center sm:mb-10">
+        <div className="mb-7 text-center sm:mb-10">
           <div className="mx-auto mb-4 inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-orange-600">
               Special Request
@@ -251,13 +251,16 @@ export default function CustomRecipePage() {
         >
           <div className="h-1.5 bg-orange-500" />
 
-          <div className="p-5 sm:p-8">
+          <div className="p-4 sm:p-8">
             {error && (
-              <div className="mb-7 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+              <div className="mb-6 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:mb-7">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600">
                   !
                 </div>
-                <p className="text-sm leading-6 text-red-700">{error}</p>
+
+                <p className="min-w-0 text-sm leading-6 text-red-700">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -266,10 +269,12 @@ export default function CustomRecipePage() {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-sm font-bold text-orange-600">
                   1
                 </div>
-                <div>
+
+                <div className="min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">
                     Customer Information
                   </h2>
+
                   <p className="mt-0.5 text-xs text-gray-500">
                     Tell us how we can contact you.
                   </p>
@@ -284,6 +289,7 @@ export default function CustomRecipePage() {
                   >
                     Full Name <span className="text-orange-500">*</span>
                   </label>
+
                   <input
                     id="name"
                     name="name"
@@ -302,8 +308,10 @@ export default function CustomRecipePage() {
                     htmlFor="phone"
                     className="mb-2 block text-sm font-semibold text-gray-800"
                   >
-                    Phone Number <span className="text-orange-500">*</span>
+                    Phone Number{" "}
+                    <span className="text-orange-500">*</span>
                   </label>
+
                   <input
                     id="phone"
                     name="phone"
@@ -317,12 +325,14 @@ export default function CustomRecipePage() {
                     placeholder="Enter 10-digit number"
                     className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                   />
-                  <div className="mt-1.5 flex justify-between">
+
+                  <div className="mt-1.5 flex justify-between gap-3">
                     <span className="text-xs text-gray-400">
                       Used for order tracking
                     </span>
+
                     <span
-                      className={`text-xs font-medium ${
+                      className={`shrink-0 text-xs font-medium ${
                         formData.phone.length === 10
                           ? "text-green-600"
                           : "text-gray-400"
@@ -343,6 +353,7 @@ export default function CustomRecipePage() {
                       Optional
                     </span>
                   </label>
+
                   <input
                     id="email"
                     name="email"
@@ -357,17 +368,19 @@ export default function CustomRecipePage() {
               </div>
             </section>
 
-            <div className="my-8 border-t border-gray-100" />
+            <div className="my-7 border-t border-gray-100 sm:my-8" />
 
             <section>
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-sm font-bold text-orange-600">
                   2
                 </div>
-                <div>
+
+                <div className="min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">
                     Recipe Information
                   </h2>
+
                   <p className="mt-0.5 text-xs text-gray-500">
                     Describe the recipe you want.
                   </p>
@@ -380,8 +393,10 @@ export default function CustomRecipePage() {
                     htmlFor="recipeName"
                     className="mb-2 block text-sm font-semibold text-gray-800"
                   >
-                    Recipe Name <span className="text-orange-500">*</span>
+                    Recipe Name{" "}
+                    <span className="text-orange-500">*</span>
                   </label>
+
                   <input
                     id="recipeName"
                     name="recipeName"
@@ -402,6 +417,7 @@ export default function CustomRecipePage() {
                     Recipe Description{" "}
                     <span className="text-orange-500">*</span>
                   </label>
+
                   <textarea
                     id="description"
                     name="description"
@@ -420,8 +436,10 @@ export default function CustomRecipePage() {
                       htmlFor="quantity"
                       className="mb-2 block text-sm font-semibold text-gray-800"
                     >
-                      Quantity <span className="text-orange-500">*</span>
+                      Quantity{" "}
+                      <span className="text-orange-500">*</span>
                     </label>
+
                     <input
                       id="quantity"
                       name="quantity"
@@ -440,8 +458,10 @@ export default function CustomRecipePage() {
                       htmlFor="unit"
                       className="mb-2 block text-sm font-semibold text-gray-800"
                     >
-                      Unit <span className="text-orange-500">*</span>
+                      Unit{" "}
+                      <span className="text-orange-500">*</span>
                     </label>
+
                     <select
                       id="unit"
                       name="unit"
@@ -464,17 +484,19 @@ export default function CustomRecipePage() {
               </div>
             </section>
 
-            <div className="my-8 border-t border-gray-100" />
+            <div className="my-7 border-t border-gray-100 sm:my-8" />
 
             <section>
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-sm font-bold text-orange-600">
                   3
                 </div>
-                <div>
+
+                <div className="min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">
                     Delivery Information
                   </h2>
+
                   <p className="mt-0.5 text-xs text-gray-500">
                     Tell us where and when you need it.
                   </p>
@@ -491,6 +513,7 @@ export default function CustomRecipePage() {
                       Preferred Delivery Date{" "}
                       <span className="text-orange-500">*</span>
                     </label>
+
                     <input
                       id="deliveryDate"
                       name="deliveryDate"
@@ -499,7 +522,7 @@ export default function CustomRecipePage() {
                       onChange={handleChange}
                       required
                       min={new Date().toISOString().split("T")[0]}
-                      className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                      className="h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                     />
                   </div>
 
@@ -511,6 +534,7 @@ export default function CustomRecipePage() {
                       Preferred Delivery Time{" "}
                       <span className="text-orange-500">*</span>
                     </label>
+
                     <input
                       id="deliveryTime"
                       name="deliveryTime"
@@ -518,7 +542,7 @@ export default function CustomRecipePage() {
                       value={formData.deliveryTime}
                       onChange={handleChange}
                       required
-                      className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                      className="h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                     />
                   </div>
                 </div>
@@ -531,6 +555,7 @@ export default function CustomRecipePage() {
                     Complete Delivery Address{" "}
                     <span className="text-orange-500">*</span>
                   </label>
+
                   <textarea
                     id="deliveryAddress"
                     name="deliveryAddress"
@@ -554,6 +579,7 @@ export default function CustomRecipePage() {
                       Optional
                     </span>
                   </label>
+
                   <input
                     id="mapPin"
                     name="mapPin"
@@ -563,6 +589,7 @@ export default function CustomRecipePage() {
                     placeholder="Paste your Google Maps location link"
                     className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                   />
+
                   <p className="mt-2 text-xs leading-5 text-gray-500">
                     This helps our delivery team find your location easily.
                   </p>
@@ -570,17 +597,19 @@ export default function CustomRecipePage() {
               </div>
             </section>
 
-            <div className="my-8 border-t border-gray-100" />
+            <div className="my-7 border-t border-gray-100 sm:my-8" />
 
             <section>
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-sm font-bold text-orange-600">
                   4
                 </div>
-                <div>
+
+                <div className="min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">
                     Additional Instructions
                   </h2>
+
                   <p className="mt-0.5 text-xs text-gray-500">
                     Add any special requirements.
                   </p>
@@ -600,11 +629,11 @@ export default function CustomRecipePage() {
               </div>
             </section>
 
-            <div className="mt-9 border-t border-gray-100 pt-7">
+            <div className="mt-8 border-t border-gray-100 pt-6 sm:mt-9 sm:pt-7">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex min-h-13 w-full items-center justify-center rounded-xl bg-orange-500 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-13 w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"
               >
                 {loading ? (
                   <>

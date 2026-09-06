@@ -94,11 +94,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-orange-50 text-zinc-900">
-      <div className="flex min-h-screen items-center justify-center px-6 py-12">
+    <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
+      <div className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
         <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <div className="text-3xl font-bold tracking-tight text-orange-600">
+          <div className="mb-6 text-center sm:mb-8">
+            <div className="text-2xl font-bold tracking-tight text-orange-600 sm:text-3xl">
               Sparsha Kitchen
             </div>
 
@@ -107,13 +107,13 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-orange-100 bg-white p-7 shadow-sm sm:p-9">
+          <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm sm:p-9">
             <div>
               <p className="font-semibold uppercase tracking-wide text-orange-600">
                 Admin Login
               </p>
 
-              <h1 className="mt-2 text-3xl font-bold">
+              <h1 className="mt-2 text-2xl font-bold sm:text-3xl">
                 Welcome back
               </h1>
 
@@ -123,14 +123,14 @@ export default function AdminLoginPage() {
             </div>
 
             {error && (
-              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+              <div className="mt-6 break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium leading-6 text-red-700">
                 {error}
               </div>
             )}
 
             <form
               onSubmit={handleSubmit}
-              className="mt-8 space-y-5"
+              className="mt-7 space-y-5 sm:mt-8"
             >
               <div>
                 <label
@@ -150,7 +150,7 @@ export default function AdminLoginPage() {
                   placeholder="Admin email"
                   autoComplete="email"
                   required
-                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
@@ -172,7 +172,7 @@ export default function AdminLoginPage() {
                   placeholder="Admin password"
                   autoComplete="current-password"
                   required
-                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 />
               </div>
 
@@ -188,14 +188,14 @@ export default function AdminLoginPage() {
             <div className="mt-6 border-t border-zinc-100 pt-5 text-center">
               <Link
                 href="/"
-                className="text-sm font-medium text-zinc-500 hover:text-orange-600"
+                className="inline-block px-2 py-1 text-sm font-medium text-zinc-500 hover:text-orange-600"
               >
                 ← Back to website
               </Link>
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-zinc-400">
+          <p className="mt-5 text-center text-xs text-zinc-400 sm:mt-6">
             Sparsha Kitchen Admin
           </p>
         </div>

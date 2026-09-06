@@ -272,6 +272,34 @@ const getWhatsAppUrl = (phone: string) => {
   return `https://api.whatsapp.com/send/?phone=${whatsappNumber}&text=${message}&type=phone_number&app_absent=0`;
 };
 
+const getMapUrl = (mapPin: string) => {
+  const value = String(mapPin || "").trim();
+
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  const coordinateMatch = value.match(
+    /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/
+  );
+
+  if (coordinateMatch) {
+    const [, latitude, longitude] = coordinateMatch;
+
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${latitude},${longitude}`
+    )}`;
+  }
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    value
+  )}`;
+};
+
 export default function AdminOrdersPage() {
   const router = useRouter();
 
@@ -2109,7 +2137,7 @@ export default function AdminOrdersPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:flex-nowrap sm:px-6 sm:py-5 lg:px-8">
           <div>
             <div className="min-w-0 truncate text-xl font-bold tracking-tight text-orange-600 sm:text-2xl">
               Sparsha Kitchen
@@ -2169,7 +2197,7 @@ export default function AdminOrdersPage() {
               void fetchCustomRecipeRequests();
             }}
             disabled={loading}
-            className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+            className="w-full rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
           >
             {loading
               ? "Refreshing..."
@@ -2474,7 +2502,7 @@ export default function AdminOrdersPage() {
                           Track ID: {request.trackId}
                         </p>
 
-                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+                        <div className="mt-4 grid min-w-0 gap-3 text-sm md:grid-cols-2">
                           <p>
                             <span className="font-semibold">
                               Customer:
@@ -2536,10 +2564,10 @@ export default function AdminOrdersPage() {
 
                             {request.mapPin && (
                               <a
-                                href={request.mapPin}
+                                href={getMapUrl(request.mapPin)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-200"
+                                className="ml-2 mt-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-200 sm:mt-0"
                                 title="Open map location"
                               >
                                 📍 Map
@@ -2637,7 +2665,7 @@ export default function AdminOrdersPage() {
                     key={order._id}
                     className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"
                   >
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -2827,7 +2855,7 @@ export default function AdminOrdersPage() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap gap-2 lg:max-w-md lg:justify-end">
+                        <div className="grid w-full gap-2 sm:flex sm:flex-wrap lg:w-auto lg:max-w-md lg:justify-end">
                           <button
                             type="button"
                             onClick={() =>
@@ -2835,7 +2863,7 @@ export default function AdminOrdersPage() {
                                 order
                               )
                             }
-                            className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                            className="w-full rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto"
                           >
                             View Details
                           </button>
@@ -2853,7 +2881,7 @@ export default function AdminOrdersPage() {
                                   order
                                 )
                               }
-                              className="rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                              className="w-full rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50 sm:w-auto"
                             >
                               Edit Order
                             </button>
@@ -2873,7 +2901,7 @@ export default function AdminOrdersPage() {
                                     order
                                   )
                                 }
-                                className="rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                               >
                                 {actionLoading ===
                                 order._id
@@ -2896,7 +2924,7 @@ export default function AdminOrdersPage() {
                                   order
                                 )
                               }
-                              className="rounded-full bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="w-full rounded-full bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                               {actionLoading ===
                               order._id
@@ -2921,7 +2949,7 @@ export default function AdminOrdersPage() {
                                     "approve"
                                   )
                                 }
-                                className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                                className="w-full rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 sm:w-auto"
                               >
                                 Approve Cancellation
                               </button>
@@ -2938,7 +2966,7 @@ export default function AdminOrdersPage() {
                                     "reject"
                                   )
                                 }
-                                className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                                className="w-full rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
                               >
                                 Reject
                               </button>
@@ -3026,15 +3054,15 @@ export default function AdminOrdersPage() {
       </section>
 
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4 sm:p-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-4xl rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-zinc-100 bg-white px-6 py-5">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-3xl border-b border-zinc-100 bg-white px-4 py-4 sm:items-center sm:px-6 sm:py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Order Details
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold">
+                <h2 className="mt-1 break-all text-xl font-bold sm:text-2xl">
                   {
                     selectedOrder.orderId
                   }
@@ -3054,7 +3082,7 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            <div className="space-y-7 p-6">
+            <div className="space-y-7 p-4 sm:p-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_CLASSES[selectedOrder.status]}`}
@@ -3571,7 +3599,7 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
-              <div className="flex flex-wrap gap-3 border-t border-zinc-100 pt-6">
+              <div className="grid gap-3 border-t border-zinc-100 pt-6 sm:flex sm:flex-wrap">
                 {![
                   "DELIVERED",
                   "CANCELLED",
@@ -3585,7 +3613,7 @@ export default function AdminOrdersPage() {
                         selectedOrder
                       )
                     }
-                    className="rounded-full border border-orange-200 px-5 py-3 text-sm font-bold text-orange-700 hover:bg-orange-50"
+                    className="w-full rounded-full border border-orange-200 px-5 py-3 text-sm font-bold text-orange-700 hover:bg-orange-50 sm:w-auto"
                   >
                     Edit Order
                   </button>
@@ -3609,7 +3637,7 @@ export default function AdminOrdersPage() {
                         selectedOrder
                       )
                     }
-                    className="rounded-full border border-red-200 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="w-full rounded-full border border-red-200 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 sm:w-auto"
                   >
                     Cancel Order
                   </button>
@@ -3629,7 +3657,7 @@ export default function AdminOrdersPage() {
                           selectedOrder
                         )
                       }
-                      className="rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                      className="w-full rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
                     >
                       {actionLoading ===
                       selectedOrder._id
@@ -3652,7 +3680,7 @@ export default function AdminOrdersPage() {
                         selectedOrder
                       )
                     }
-                    className="rounded-full bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50"
+                    className="w-full rounded-full bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50 sm:w-auto"
                   >
                     {actionLoading ===
                     selectedOrder._id
@@ -3674,7 +3702,7 @@ export default function AdminOrdersPage() {
                       selectedOrder
                     )
                   }
-                  className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                  className="w-full rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 sm:w-auto"
                 >
                   {actionLoading ===
                   selectedOrder._id
@@ -3688,15 +3716,15 @@ export default function AdminOrdersPage() {
       )}
 
       {selectedCustomRecipe && (
-        <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/40 p-4 sm:p-8">
+        <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-3xl border-b border-orange-100 bg-white px-5 py-5 sm:px-6">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-3xl border-b border-orange-100 bg-white px-4 py-4 sm:gap-4 sm:px-6 sm:py-5">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Custom Recipe Request
                 </p>
 
-                <h2 className="mt-1 break-words text-2xl font-bold">
+                <h2 className="mt-1 break-words text-xl font-bold sm:text-2xl">
                   {selectedCustomRecipe.recipeName}
                 </h2>
 
@@ -3908,7 +3936,7 @@ export default function AdminOrdersPage() {
                           onClick={() =>
                             void approveCustomRecipeRequest()
                           }
-                          className="rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                          className="w-full rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
                         >
                           {actionLoading ===
                           selectedCustomRecipe._id
@@ -3925,7 +3953,7 @@ export default function AdminOrdersPage() {
                           onClick={() =>
                             void rejectCustomRecipeRequest()
                           }
-                          className="rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                          className="w-full rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50 sm:w-auto"
                         >
                           {actionLoading ===
                           selectedCustomRecipe._id
@@ -3944,7 +3972,7 @@ export default function AdminOrdersPage() {
                     onClick={() =>
                       void deleteCustomRecipeRequest()
                     }
-                    className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                    className="w-full rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 sm:w-auto"
                   >
                     {actionLoading ===
                     selectedCustomRecipe._id
@@ -3980,9 +4008,9 @@ export default function AdminOrdersPage() {
       )}
 
       {paymentOrder && (
-        <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/40 p-4 sm:p-8">
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-lg rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 sm:items-center sm:px-6 sm:py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-green-600">
                   Record Payment
@@ -4008,7 +4036,7 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            <div className="space-y-5 p-6">
+            <div className="space-y-5 p-4 sm:p-6">
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -4110,7 +4138,7 @@ export default function AdminOrdersPage() {
                 />
               </div>
 
-              <div className="flex gap-3 border-t border-zinc-100 pt-5">
+              <div className="grid gap-3 border-t border-zinc-100 pt-5 sm:flex">
                 <button
                   type="button"
                   disabled={
@@ -4120,7 +4148,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     void addPayment()
                   }
-                  className="flex-1 rounded-full bg-green-600 px-5 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                  className="w-full rounded-full bg-green-600 sm:flex-1 px-5 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
                 >
                   {actionLoading ===
                   paymentOrder._id
@@ -4139,7 +4167,7 @@ export default function AdminOrdersPage() {
                       null
                     )
                   }
-                  className="rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50"
+                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold sm:w-auto text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
@@ -4150,9 +4178,9 @@ export default function AdminOrdersPage() {
       )}
 
       {otpOrder && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
-            <div className="border-b border-zinc-100 px-6 py-5">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
+          <div className="my-auto w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+            <div className="border-b border-zinc-100 px-4 py-4 sm:px-6 sm:py-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
                 Delivery Verification
               </p>
@@ -4162,7 +4190,7 @@ export default function AdminOrdersPage() {
               </h2>
             </div>
 
-            <div className="space-y-5 p-6">
+            <div className="space-y-5 p-4 sm:p-6">
               <div className="rounded-2xl bg-green-50 p-4 text-sm text-green-800">
                 Remaining payment is confirmed at{" "}
                 <strong>
@@ -4250,7 +4278,7 @@ export default function AdminOrdersPage() {
                 />
               </div>
 
-              <div className="flex gap-3 border-t border-zinc-100 pt-5">
+              <div className="grid gap-3 border-t border-zinc-100 pt-5 sm:flex">
                 <button
                   type="button"
                   disabled={
@@ -4262,7 +4290,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     void verifyDeliveryOtp()
                   }
-                  className="flex-1 rounded-full bg-indigo-600 px-5 py-3 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-full bg-indigo-600 sm:flex-1 px-5 py-3 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading ===
                   otpOrder._id
@@ -4279,7 +4307,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     setOtpOrder(null)
                   }
-                  className="rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50"
+                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold sm:w-auto text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
@@ -4290,15 +4318,15 @@ export default function AdminOrdersPage() {
       )}
 
       {editingOrder && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 p-4 sm:p-8">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-zinc-100 bg-white px-6 py-5">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-3xl border-b border-zinc-100 bg-white px-4 py-4 sm:items-center sm:px-6 sm:py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Edit Order
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold">
+                <h2 className="mt-1 break-all text-xl font-bold sm:text-2xl">
                   {
                     editingOrder.orderId
                   }
@@ -4320,7 +4348,7 @@ export default function AdminOrdersPage() {
 
             <form
               onSubmit={saveOrderEdit}
-              className="space-y-6 p-6"
+              className="space-y-6 p-4 sm:p-6"
             >
               <div>
                 <h3 className="text-lg font-bold">
