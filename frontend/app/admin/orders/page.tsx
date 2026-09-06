@@ -256,8 +256,6 @@ const NEXT_STATUS_LABEL: Partial<
 const getWhatsAppUrl = (phone: string) => {
   const digits = String(phone || "").replace(/\D/g, "");
 
-  // Customer phone numbers are expected to be 10 digits in India.
-  // Add India country code automatically for WhatsApp.
   const whatsappNumber =
     digits.length === 10
       ? `91${digits}`
@@ -265,13 +263,13 @@ const getWhatsAppUrl = (phone: string) => {
         ? digits
         : digits;
 
-const message = encodeURIComponent(
-  "*Welcome to Sparsha Kitchen! 🍽️*\n\n" +
-  "Thank you for choosing Sparsha Kitchen. We’re delighted to serve you with fresh, delicious, and homestyle food prepared with care.\n\n" +
-  "We look forward to serving you again! ❤️"
-);
+  const message = encodeURIComponent(
+    "*Welcome to Sparsha Kitchen! 🍽️*\n\n" +
+      "Thank you for choosing Sparsha Kitchen. We’re delighted to serve you with fresh, delicious, and homestyle food prepared with care.\n\n" +
+      "We look forward to serving you again! ❤️"
+  );
 
-return `https://api.whatsapp.com/send/?phone=${whatsappNumber}&text=${message}&type=phone_number&app_absent=0`;
+  return `https://api.whatsapp.com/send/?phone=${whatsappNumber}&text=${message}&type=phone_number&app_absent=0`;
 };
 
 export default function AdminOrdersPage() {
@@ -504,7 +502,9 @@ export default function AdminOrdersPage() {
     const quotedPrice = Number(customRecipeQuote || 0);
 
     if (!Number.isFinite(quotedPrice) || quotedPrice <= 0) {
-      setError("Enter a valid quoted price before approving the custom recipe.");
+      setError(
+        "Enter a valid quoted price before approving the custom recipe."
+      );
       return;
     }
 
@@ -535,7 +535,8 @@ export default function AdminOrdersPage() {
         }
       );
 
-      const data: CustomRecipeRequestResponse = await response.json();
+      const data: CustomRecipeRequestResponse =
+        await response.json();
 
       if (response.status === 401) {
         logout();
@@ -544,7 +545,8 @@ export default function AdminOrdersPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to approve custom recipe request."
+          data.message ||
+            "Unable to approve custom recipe request."
         );
       }
 
@@ -557,7 +559,11 @@ export default function AdminOrdersPage() {
       await fetchCustomRecipeRequests();
       await fetchOrders();
     } catch (err) {
-      console.error("Approve custom recipe request error:", err);
+      console.error(
+        "Approve custom recipe request error:",
+        err
+      );
+
       setError(
         err instanceof Error
           ? err.message
@@ -603,7 +609,8 @@ export default function AdminOrdersPage() {
         }
       );
 
-      const data: CustomRecipeRequestResponse = await response.json();
+      const data: CustomRecipeRequestResponse =
+        await response.json();
 
       if (response.status === 401) {
         logout();
@@ -612,18 +619,24 @@ export default function AdminOrdersPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to reject custom recipe request."
+          data.message ||
+            "Unable to reject custom recipe request."
         );
       }
 
       setMessage(
-        data.message || "Custom recipe request rejected successfully."
+        data.message ||
+          "Custom recipe request rejected successfully."
       );
 
       setSelectedCustomRecipe(null);
       await fetchCustomRecipeRequests();
     } catch (err) {
-      console.error("Reject custom recipe request error:", err);
+      console.error(
+        "Reject custom recipe request error:",
+        err
+      );
+
       setError(
         err instanceof Error
           ? err.message
@@ -665,7 +678,8 @@ export default function AdminOrdersPage() {
         }
       );
 
-      const data: CustomRecipeRequestResponse = await response.json();
+      const data: CustomRecipeRequestResponse =
+        await response.json();
 
       if (response.status === 401) {
         logout();
@@ -674,17 +688,24 @@ export default function AdminOrdersPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to delete custom recipe request."
+          data.message ||
+            "Unable to delete custom recipe request."
         );
       }
 
       setMessage(
-        data.message || "Custom recipe request deleted successfully."
+        data.message ||
+          "Custom recipe request deleted successfully."
       );
+
       setSelectedCustomRecipe(null);
       await fetchCustomRecipeRequests();
     } catch (err) {
-      console.error("Delete custom recipe request error:", err);
+      console.error(
+        "Delete custom recipe request error:",
+        err
+      );
+
       setError(
         err instanceof Error
           ? err.message
@@ -1155,12 +1176,6 @@ export default function AdminOrdersPage() {
   const advanceOrder = async (
     order: Order
   ) => {
-    /*
-     * Delivery completion is special.
-     * Remaining payment must be zero and
-     * customer OTP must be verified.
-     */
-
     if (
       order.status ===
       "OUT_FOR_DELIVERY"
@@ -1193,11 +1208,6 @@ export default function AdminOrdersPage() {
     if (!nextStatus) {
       return;
     }
-
-    /*
-     * Delivery person is required before
-     * Preparing, Ready and Out for Delivery.
-     */
 
     if (
       !order.deliveryPerson &&
@@ -1380,15 +1390,6 @@ export default function AdminOrdersPage() {
     }
   };
 
-  /*
-   * ADMIN DIRECT CANCEL ORDER
-   *
-   * This is separate from the customer
-   * cancellation-request workflow.
-   *
-   * Endpoint:
-   * PATCH /api/admin/orders/:id/cancel
-   */
   const cancelOrder = async (
     order: Order
   ) => {
@@ -1447,12 +1448,6 @@ export default function AdminOrdersPage() {
     );
   };
 
-  /*
-   * DELETE ORDER
-   *
-   * Requires backend:
-   * DELETE /api/admin/orders/:id
-   */
   const deleteOrder = async (
     order: Order
   ) => {
@@ -1963,14 +1958,6 @@ export default function AdminOrdersPage() {
     );
   };
 
-  /*
-   * IMPORTANT:
-   *
-   * CUSTOMER_CONFIRMED is NOT included here.
-   *
-   * That prevents the duplicate Confirm Order
-   * button that appeared in your screenshot.
-   */
   const hasActionButton = (
     order: Order
   ) => {
@@ -2121,8 +2108,6 @@ export default function AdminOrdersPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-orange-50 text-zinc-900">
-      {/* HEADER */}
-
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <div>
@@ -2156,8 +2141,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       </header>
-
-      {/* MAIN */}
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -2194,23 +2177,17 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
-        {/* ERROR */}
-
         {error && (
           <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
 
-        {/* SUCCESS */}
-
         {message && (
           <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
             {message}
           </div>
         )}
-
-        {/* COUNTS */}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <button
@@ -2282,8 +2259,6 @@ export default function AdminOrdersPage() {
             </p>
           </button>
         </div>
-
-        {/* SEARCH */}
 
         <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[1fr_240px]">
@@ -2391,8 +2366,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* CUSTOM RECIPE REQUESTS */}
-
         <section className="mt-8 overflow-hidden rounded-3xl border border-orange-200 bg-white shadow-sm">
           <div className="border-b border-orange-100 bg-orange-50 p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -2419,9 +2392,11 @@ export default function AdminOrdersPage() {
                 <span className="rounded-full bg-yellow-100 px-3 py-1 text-yellow-800">
                   Pending: {customRecipePendingCount}
                 </span>
+
                 <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-800">
                   Quoted: {customRecipeQuotedCount}
                 </span>
+
                 <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">
                   Approved: {customRecipeApprovedCount}
                 </span>
@@ -2446,16 +2421,21 @@ export default function AdminOrdersPage() {
           {customRecipeLoading ? (
             <div className="p-10 text-center">
               <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600" />
+
               <p className="mt-4 text-sm text-zinc-500">
                 Loading custom recipe requests...
               </p>
             </div>
           ) : filteredCustomRecipeRequests.length === 0 ? (
             <div className="p-8 text-center sm:p-10">
-              <div className="text-5xl">🍽️</div>
+              <div className="text-5xl">
+                🍽️
+              </div>
+
               <h3 className="mt-4 text-lg font-bold">
                 No custom recipe requests
               </h3>
+
               <p className="mt-1 text-sm text-zinc-500">
                 New customer requests will appear here.
               </p>
@@ -2520,7 +2500,9 @@ export default function AdminOrdersPage() {
                                 className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                                 title="Open WhatsApp chat"
                               >
-                                <span aria-hidden="true">🟢</span>
+                                <span aria-hidden="true">
+                                  🟢
+                                </span>
                                 WhatsApp
                               </a>
                             )}
@@ -2622,8 +2604,6 @@ export default function AdminOrdersPage() {
           )}
         </section>
 
-        {/* ORDER LIST */}
-
         <div className="mt-8">
           {loading ? (
             <div className="rounded-3xl border border-orange-100 bg-white p-12 text-center shadow-sm">
@@ -2675,11 +2655,16 @@ export default function AdminOrdersPage() {
                               }
                             </span>
 
-                            {order.customerConfirmed && (
-                              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                                Customer Confirmed
-                              </span>
-                            )}
+                            {/* FIX: Do not show a second
+                                Customer Confirmed badge when
+                                the status badge already says it. */}
+                            {order.customerConfirmed &&
+                              order.status !==
+                                "CUSTOMER_CONFIRMED" && (
+                                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                                  Customer Confirmed
+                                </span>
+                              )}
 
                             {order.adminConfirmed && (
                               <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
@@ -2722,7 +2707,9 @@ export default function AdminOrdersPage() {
                                   className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                                   title="Open WhatsApp chat"
                                 >
-                                  <span aria-hidden="true">🟢</span>
+                                  <span aria-hidden="true">
+                                    🟢
+                                  </span>
                                   WhatsApp
                                 </a>
                               )}
@@ -2769,8 +2756,6 @@ export default function AdminOrdersPage() {
                               )}
                             </div>
                           </div>
-
-                          {/* DELIVERY ADDRESS */}
 
                           <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
@@ -3040,8 +3025,6 @@ export default function AdminOrdersPage() {
         </div>
       </section>
 
-      {/* ORDER DETAILS MODAL */}
-
       {selectedOrder && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4 sm:p-8">
           <div className="mx-auto max-w-4xl rounded-3xl bg-white shadow-2xl">
@@ -3072,8 +3055,6 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="space-y-7 p-6">
-              {/* STATUS */}
-
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_CLASSES[selectedOrder.status]}`}
@@ -3112,8 +3093,6 @@ export default function AdminOrdersPage() {
                 </span>
               </div>
 
-              {/* CUSTOMER */}
-
               <section>
                 <h3 className="text-lg font-bold">
                   Customer
@@ -3151,7 +3130,9 @@ export default function AdminOrdersPage() {
                         className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                         title="Open WhatsApp chat"
                       >
-                        <span aria-hidden="true">🟢</span>
+                        <span aria-hidden="true">
+                          🟢
+                        </span>
                         WhatsApp
                       </a>
                     )}
@@ -3172,8 +3153,6 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
               </section>
-
-              {/* DELIVERY */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -3235,13 +3214,9 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
-              {/* DELIVERY PERSON */}
-
               {renderDeliverySection(
                 selectedOrder
               )}
-
-              {/* ORDER ITEMS */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -3288,8 +3263,6 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
               </section>
-
-              {/* PAYMENT */}
 
               <section>
                 <div className="flex items-center justify-between gap-3">
@@ -3469,8 +3442,6 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
-              {/* CANCELLATION */}
-
               {selectedOrder.cancellationRequested && (
                 <section className="rounded-2xl border border-red-200 bg-red-50 p-4">
                   <h3 className="font-bold text-red-700">
@@ -3522,8 +3493,6 @@ export default function AdminOrdersPage() {
                 </section>
               )}
 
-              {/* CHANGE REQUEST */}
-
               {selectedOrder.changeRequested && (
                 <section className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
                   <h3 className="font-bold text-yellow-800">
@@ -3547,8 +3516,6 @@ export default function AdminOrdersPage() {
                   </p>
                 </section>
               )}
-
-              {/* STATUS HISTORY */}
 
               <section>
                 <h3 className="text-lg font-bold">
@@ -3604,8 +3571,6 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
-              {/* ACTIONS */}
-
               <div className="flex flex-wrap gap-3 border-t border-zinc-100 pt-6">
                 {![
                   "DELIVERED",
@@ -3625,8 +3590,6 @@ export default function AdminOrdersPage() {
                     Edit Order
                   </button>
                 )}
-
-                {/* CANCEL ORDER */}
 
                 {![
                   "DELIVERED",
@@ -3652,8 +3615,6 @@ export default function AdminOrdersPage() {
                   </button>
                 )}
 
-                {/* CONFIRM ORDER */}
-
                 {selectedOrder.status ===
                   "CUSTOMER_CONFIRMED" &&
                   !selectedOrder.adminConfirmed && (
@@ -3676,8 +3637,6 @@ export default function AdminOrdersPage() {
                         : "Confirm Order"}
                     </button>
                   )}
-
-                {/* NEXT STATUS */}
 
                 {hasActionButton(
                   selectedOrder
@@ -3704,8 +3663,6 @@ export default function AdminOrdersPage() {
                   </button>
                 )}
 
-                {/* DELETE */}
-
                 <button
                   type="button"
                   disabled={
@@ -3729,8 +3686,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* CUSTOM RECIPE REQUEST MODAL */}
 
       {selectedCustomRecipe && (
         <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/40 p-4 sm:p-8">
@@ -3845,9 +3800,12 @@ export default function AdminOrdersPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Delivery Address
                 </p>
+
                 <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold text-zinc-800">
-                  {selectedCustomRecipe.deliveryAddress || "No address provided"}
+                  {selectedCustomRecipe.deliveryAddress ||
+                    "No address provided"}
                 </p>
+
                 {selectedCustomRecipe.mapPin && (
                   <p className="mt-2 break-all text-xs text-zinc-500">
                     Map Pin: {selectedCustomRecipe.mapPin}
@@ -3943,22 +3901,34 @@ export default function AdminOrdersPage() {
                       <>
                         <button
                           type="button"
-                          disabled={actionLoading === selectedCustomRecipe._id}
-                          onClick={() => void approveCustomRecipeRequest()}
+                          disabled={
+                            actionLoading ===
+                            selectedCustomRecipe._id
+                          }
+                          onClick={() =>
+                            void approveCustomRecipeRequest()
+                          }
                           className="rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
                         >
-                          {actionLoading === selectedCustomRecipe._id
+                          {actionLoading ===
+                          selectedCustomRecipe._id
                             ? "Approving..."
                             : "Approve"}
                         </button>
 
                         <button
                           type="button"
-                          disabled={actionLoading === selectedCustomRecipe._id}
-                          onClick={() => void rejectCustomRecipeRequest()}
+                          disabled={
+                            actionLoading ===
+                            selectedCustomRecipe._id
+                          }
+                          onClick={() =>
+                            void rejectCustomRecipeRequest()
+                          }
                           className="rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
                         >
-                          {actionLoading === selectedCustomRecipe._id
+                          {actionLoading ===
+                          selectedCustomRecipe._id
                             ? "Processing..."
                             : "Reject"}
                         </button>
@@ -3967,11 +3937,17 @@ export default function AdminOrdersPage() {
 
                   <button
                     type="button"
-                    disabled={actionLoading === selectedCustomRecipe._id}
-                    onClick={() => void deleteCustomRecipeRequest()}
+                    disabled={
+                      actionLoading ===
+                      selectedCustomRecipe._id
+                    }
+                    onClick={() =>
+                      void deleteCustomRecipeRequest()
+                    }
                     className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
                   >
-                    {actionLoading === selectedCustomRecipe._id
+                    {actionLoading ===
+                    selectedCustomRecipe._id
                       ? "Processing..."
                       : "Delete Request"}
                   </button>
@@ -4002,8 +3978,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* PAYMENT MODAL */}
 
       {paymentOrder && (
         <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/40 p-4 sm:p-8">
@@ -4175,8 +4149,6 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* DELIVERY OTP MODAL */}
-
       {otpOrder && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
@@ -4317,8 +4289,6 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* EDIT ORDER MODAL */}
-
       {editingOrder && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 p-4 sm:p-8">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white shadow-2xl">
@@ -4352,8 +4322,6 @@ export default function AdminOrdersPage() {
               onSubmit={saveOrderEdit}
               className="space-y-6 p-6"
             >
-              {/* CUSTOMER DETAILS */}
-
               <div>
                 <h3 className="text-lg font-bold">
                   Customer Details
@@ -4424,8 +4392,6 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
               </div>
-
-              {/* DELIVERY DETAILS */}
 
               <div>
                 <h3 className="text-lg font-bold">
@@ -4546,8 +4512,6 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* PRICE */}
-
               <div>
                 <h3 className="text-lg font-bold">
                   Price
@@ -4626,8 +4590,6 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* WARNING */}
-
               <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                 <strong>
                   Important:
@@ -4638,8 +4600,6 @@ export default function AdminOrdersPage() {
                 The customer must confirm
                 the updated order again.
               </div>
-
-              {/* SAVE */}
 
               <div className="flex flex-col gap-3 border-t border-zinc-100 pt-6 sm:flex-row">
                 <button

@@ -1875,9 +1875,21 @@ export default function TrackOrderClient() {
                     </p>
                   </div>
 
+                  {/* ==========================================
+                      MAP PIN FIX
+                      ========================================== */}
+
                   {order.mapPin && (
                     <a
-                      href={order.mapPin}
+                      href={
+                        /^https?:\/\//i.test(
+                          order.mapPin.trim()
+                        )
+                          ? order.mapPin.trim()
+                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              order.mapPin.trim()
+                            )}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex max-w-full break-all font-semibold text-orange-600 hover:text-orange-700"
@@ -2099,12 +2111,10 @@ export default function TrackOrderClient() {
                     Delivery Charge
                   </span>
 
-                  <span className="shrink-0">
-                    ₹
-                    {Number(
-                      order.deliveryCharge ||
-                        0
-                    ).toFixed(2)}
+                  <span className="shrink-0 text-right font-semibold">
+                    {Number(order.deliveryCharge || 0) > 0
+                      ? `₹${Number(order.deliveryCharge).toFixed(2)}`
+                      : "Will be shown when Admin confirms your order"}
                   </span>
                 </div>
 
