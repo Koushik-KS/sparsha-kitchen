@@ -9,7 +9,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 type OrderStatus =
   | "PENDING_CONFIRMATION"
@@ -2206,13 +2207,13 @@ export default function AdminOrdersPage() {
         </div>
 
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <div className="mt-8 break-words rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+          <div className="mt-8 break-words rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
             {message}
           </div>
         )}
@@ -2308,7 +2309,7 @@ export default function AdminOrdersPage() {
                   )
                 }
                 placeholder="Order ID, customer name, or phone"
-                className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
               />
             </div>
 
@@ -2331,7 +2332,7 @@ export default function AdminOrdersPage() {
                       | OrderStatus
                   )
                 }
-                className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
               >
                 <option value="ALL">
                   All Statuses
@@ -2397,9 +2398,9 @@ export default function AdminOrdersPage() {
         <section className="mt-8 overflow-hidden rounded-3xl border border-orange-200 bg-white shadow-sm">
           <div className="border-b border-orange-100 bg-orange-50 p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-2xl font-bold">
+                  <h2 className="break-words text-2xl font-bold">
                     Custom Recipe Requests
                   </h2>
 
@@ -2410,7 +2411,7 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
 
-                <p className="mt-1 text-sm text-zinc-600">
+                <p className="mt-1 break-words text-sm text-zinc-600">
                   Review customer-requested recipes, set a quote,
                   and approve or reject requests.
                 </p>
@@ -2441,7 +2442,7 @@ export default function AdminOrdersPage() {
                   )
                 }
                 placeholder="Search Track ID, recipe, customer, or phone"
-                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                className="w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
               />
             </div>
           </div>
@@ -2503,14 +2504,14 @@ export default function AdminOrdersPage() {
                         </p>
 
                         <div className="mt-4 grid min-w-0 gap-3 text-sm md:grid-cols-2">
-                          <p>
+                          <p className="break-words">
                             <span className="font-semibold">
                               Customer:
                             </span>{" "}
                             {request.customer.name}
                           </p>
 
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <p className="break-all">
                               <span className="font-semibold">
                                 Phone:
@@ -2525,7 +2526,7 @@ export default function AdminOrdersPage() {
                                 )}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                                 title="Open WhatsApp chat"
                               >
                                 <span aria-hidden="true">
@@ -2536,7 +2537,7 @@ export default function AdminOrdersPage() {
                             )}
                           </div>
 
-                          <p>
+                          <p className="break-words">
                             <span className="font-semibold">
                               Quantity:
                             </span>{" "}
@@ -2544,7 +2545,7 @@ export default function AdminOrdersPage() {
                             {request.unit}
                           </p>
 
-                          <p>
+                          <p className="break-words">
                             <span className="font-semibold">
                               Delivery:
                             </span>{" "}
@@ -2553,7 +2554,7 @@ export default function AdminOrdersPage() {
                             {request.preferredDeliveryTime}
                           </p>
 
-                          <div className="md:col-span-2">
+                          <div className="md:col-span-2 min-w-0">
                             <span className="font-semibold">
                               Address:
                             </span>{" "}
@@ -2567,7 +2568,7 @@ export default function AdminOrdersPage() {
                                 href={getMapUrl(request.mapPin)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="ml-2 mt-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-200 sm:mt-0"
+                                className="ml-0 mt-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-200 sm:ml-2 sm:mt-0"
                                 title="Open map location"
                               >
                                 📍 Map
@@ -2663,13 +2664,13 @@ export default function AdminOrdersPage() {
                 (order) => (
                   <article
                     key={order._id}
-                    className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"
+                    className="min-w-0 overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"
                   >
                     <div className="p-4 sm:p-6">
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-bold">
+                            <h2 className="break-all text-xl font-bold">
                               {order.orderId}
                             </h2>
 
@@ -2683,9 +2684,6 @@ export default function AdminOrdersPage() {
                               }
                             </span>
 
-                            {/* FIX: Do not show a second
-                                Customer Confirmed badge when
-                                the status badge already says it. */}
                             {order.customerConfirmed &&
                               order.status !==
                                 "CUSTOMER_CONFIRMED" && (
@@ -2702,7 +2700,7 @@ export default function AdminOrdersPage() {
                           </div>
 
                           <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                            <div>
+                            <div className="break-words">
                               <span className="font-semibold">
                                 Customer:
                               </span>{" "}
@@ -2713,8 +2711,8 @@ export default function AdminOrdersPage() {
                               }
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span>
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                              <span className="break-all">
                                 <span className="font-semibold">
                                   Phone:
                                 </span>{" "}
@@ -2732,7 +2730,7 @@ export default function AdminOrdersPage() {
                                   )}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                                   title="Open WhatsApp chat"
                                 >
                                   <span aria-hidden="true">
@@ -2743,7 +2741,7 @@ export default function AdminOrdersPage() {
                               )}
                             </div>
 
-                            <div>
+                            <div className="break-words">
                               <span className="font-semibold">
                                 Delivery:
                               </span>{" "}
@@ -2790,7 +2788,7 @@ export default function AdminOrdersPage() {
                               Delivery Address
                             </p>
 
-                            <p className="mt-1 text-sm font-semibold text-zinc-800">
+                            <p className="mt-1 break-words text-sm font-semibold text-zinc-800">
                               {order.deliveryAddress ||
                                 "No address provided"}
                             </p>
@@ -2830,7 +2828,7 @@ export default function AdminOrdersPage() {
                                 Cancellation requested
                               </p>
 
-                              <p className="mt-1 text-sm text-red-700">
+                              <p className="mt-1 break-words text-sm text-red-700">
                                 {
                                   order.cancellationMessage ||
                                   "Customer requested cancellation."
@@ -2845,7 +2843,7 @@ export default function AdminOrdersPage() {
                                 Change requested
                               </p>
 
-                              <p className="mt-1 text-sm text-yellow-800">
+                              <p className="mt-1 break-words text-sm text-yellow-800">
                                 {
                                   order.changeRequestMessage ||
                                   "Customer requested an order change."
@@ -3024,7 +3022,7 @@ export default function AdminOrdersPage() {
                               Created
                             </p>
 
-                            <p className="mt-1 font-semibold">
+                            <p className="mt-1 break-words font-semibold">
                               {formatDateTime(
                                 order.createdAt
                               )}
@@ -3036,7 +3034,7 @@ export default function AdminOrdersPage() {
                               Delivery Person
                             </p>
 
-                            <p className="mt-1 font-semibold">
+                            <p className="mt-1 break-words font-semibold">
                               {order.deliveryPerson
                                 ?.name ||
                                 "Not assigned"}
@@ -3057,7 +3055,7 @@ export default function AdminOrdersPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-4xl rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-3xl border-b border-zinc-100 bg-white px-4 py-4 sm:items-center sm:px-6 sm:py-5">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Order Details
                 </p>
@@ -3076,7 +3074,7 @@ export default function AdminOrdersPage() {
                     null
                   )
                 }
-                className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
               >
                 Close
               </button>
@@ -3127,7 +3125,7 @@ export default function AdminOrdersPage() {
                 </h3>
 
                 <div className="mt-3 rounded-2xl bg-zinc-50 p-4 text-sm">
-                  <p>
+                  <p className="break-words">
                     <span className="font-semibold">
                       Name:
                     </span>{" "}
@@ -3137,8 +3135,8 @@ export default function AdminOrdersPage() {
                     }
                   </p>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <p>
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+                    <p className="break-all">
                       <span className="font-semibold">
                         Phone:
                       </span>{" "}
@@ -3155,7 +3153,7 @@ export default function AdminOrdersPage() {
                         )}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200"
                         title="Open WhatsApp chat"
                       >
                         <span aria-hidden="true">
@@ -3168,7 +3166,7 @@ export default function AdminOrdersPage() {
 
                   {selectedOrder
                     .customer.email && (
-                    <p className="mt-2">
+                    <p className="mt-2 break-all">
                       <span className="font-semibold">
                         Email:
                       </span>{" "}
@@ -3188,7 +3186,7 @@ export default function AdminOrdersPage() {
                 </h3>
 
                 <div className="mt-3 rounded-2xl bg-zinc-50 p-4 text-sm">
-                  <p>
+                  <p className="break-words">
                     <span className="font-semibold">
                       Address:
                     </span>{" "}
@@ -3199,7 +3197,7 @@ export default function AdminOrdersPage() {
                   </p>
 
                   {selectedOrder.mapPin && (
-                    <p className="mt-2">
+                    <p className="mt-2 break-all">
                       <span className="font-semibold">
                         Map Pin:
                       </span>{" "}
@@ -3218,7 +3216,7 @@ export default function AdminOrdersPage() {
                     )}
                   </p>
 
-                  <p className="mt-2">
+                  <p className="mt-2 break-words">
                     <span className="font-semibold">
                       Time:
                     </span>{" "}
@@ -3229,7 +3227,7 @@ export default function AdminOrdersPage() {
 
                   {selectedOrder
                     .additionalInstructions && (
-                    <p className="mt-2">
+                    <p className="mt-2 break-words">
                       <span className="font-semibold">
                         Instructions:
                       </span>{" "}
@@ -3261,12 +3259,12 @@ export default function AdminOrdersPage() {
                         key={`${item.name}-${index}`}
                         className="flex flex-col gap-2 border-b border-zinc-100 p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div>
-                          <p className="font-semibold">
+                        <div className="min-w-0">
+                          <p className="break-words font-semibold">
                             {item.name}
                           </p>
 
-                          <p className="mt-1 text-sm text-zinc-500">
+                          <p className="mt-1 break-words text-sm text-zinc-500">
                             {item.quantity}{" "}
                             {item.unit} ×{" "}
                             {formatMoney(
@@ -3274,14 +3272,14 @@ export default function AdminOrdersPage() {
                             )}
 
                             {item.isCustomRecipe && (
-                              <span className="ml-2 rounded-full bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-700">
+                              <span className="ml-2 inline-block rounded-full bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-700">
                                 Custom
                               </span>
                             )}
                           </p>
                         </div>
 
-                        <p className="font-bold text-orange-600">
+                        <p className="shrink-0 font-bold text-orange-600">
                           {formatMoney(
                             item.totalPrice
                           )}
@@ -3293,7 +3291,7 @@ export default function AdminOrdersPage() {
               </section>
 
               <section>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-lg font-bold">
                     Price & Payment
                   </h3>
@@ -3312,7 +3310,7 @@ export default function AdminOrdersPage() {
                           selectedOrder
                         )
                       }
-                      className="rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                      className="w-full rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
                     >
                       Add Payment
                     </button>
@@ -3320,36 +3318,30 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className="mt-3 rounded-2xl bg-zinc-50 p-4">
-                  <div className="flex justify-between text-sm">
-                    <span>
-                      Food Total
-                    </span>
+                  <div className="flex justify-between gap-4 text-sm">
+                    <span>Food Total</span>
 
-                    <span>
+                    <span className="shrink-0">
                       {formatMoney(
                         selectedOrder.foodTotal
                       )}
                     </span>
                   </div>
 
-                  <div className="mt-2 flex justify-between text-sm">
-                    <span>
-                      Delivery Charge
-                    </span>
+                  <div className="mt-2 flex justify-between gap-4 text-sm">
+                    <span>Delivery Charge</span>
 
-                    <span>
+                    <span className="shrink-0">
                       {formatMoney(
                         selectedOrder.deliveryCharge
                       )}
                     </span>
                   </div>
 
-                  <div className="mt-4 flex justify-between border-t border-zinc-200 pt-4 text-lg font-bold">
-                    <span>
-                      Grand Total
-                    </span>
+                  <div className="mt-4 flex justify-between gap-4 border-t border-zinc-200 pt-4 text-lg font-bold">
+                    <span>Grand Total</span>
 
-                    <span className="text-orange-600">
+                    <span className="shrink-0 text-orange-600">
                       {formatMoney(
                         selectedOrder.grandTotal
                       )}
@@ -3390,7 +3382,7 @@ export default function AdminOrdersPage() {
                         Payment Status
                       </p>
 
-                      <p className="mt-1 font-bold">
+                      <p className="mt-1 break-words font-bold">
                         {getPaymentStatus(
                           selectedOrder
                         ).replace(
@@ -3427,7 +3419,7 @@ export default function AdminOrdersPage() {
                                   className="rounded-xl border border-zinc-200 bg-white p-3 text-sm"
                                 >
                                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="font-semibold">
+                                    <span className="break-words font-semibold">
                                       {formatMoney(
                                         payment.amount
                                       )}{" "}
@@ -3438,7 +3430,7 @@ export default function AdminOrdersPage() {
                                       )}
                                     </span>
 
-                                    <span className="text-xs text-zinc-500">
+                                    <span className="shrink-0 text-xs text-zinc-500">
                                       {formatDateTime(
                                         payment.recordedAt
                                       )}
@@ -3446,7 +3438,7 @@ export default function AdminOrdersPage() {
                                   </div>
 
                                   {payment.note && (
-                                    <p className="mt-1 text-xs text-zinc-500">
+                                    <p className="mt-1 break-words text-xs text-zinc-500">
                                       {
                                         payment.note
                                       }
@@ -3454,7 +3446,7 @@ export default function AdminOrdersPage() {
                                   )}
 
                                   {payment.recordedBy && (
-                                    <p className="mt-1 text-xs text-zinc-400">
+                                    <p className="mt-1 break-all text-xs text-zinc-400">
                                       Recorded by:{" "}
                                       {
                                         payment.recordedBy
@@ -3476,14 +3468,14 @@ export default function AdminOrdersPage() {
                     Cancellation Request
                   </h3>
 
-                  <p className="mt-2 text-sm text-red-700">
+                  <p className="mt-2 break-words text-sm text-red-700">
                     {
                       selectedOrder.cancellationMessage ||
                       "Customer requested cancellation."
                     }
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="grid gap-2 sm:flex sm:flex-wrap">
                     <button
                       type="button"
                       disabled={
@@ -3496,7 +3488,7 @@ export default function AdminOrdersPage() {
                           "approve"
                         )
                       }
-                      className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                      className="w-full rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 sm:w-auto"
                     >
                       Approve Cancellation
                     </button>
@@ -3513,7 +3505,7 @@ export default function AdminOrdersPage() {
                           "reject"
                         )
                       }
-                      className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                      className="w-full rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto"
                     >
                       Reject
                     </button>
@@ -3527,14 +3519,14 @@ export default function AdminOrdersPage() {
                     Change Request
                   </h3>
 
-                  <p className="mt-2 text-sm text-yellow-800">
+                  <p className="mt-2 break-words text-sm text-yellow-800">
                     {
                       selectedOrder.changeRequestMessage ||
                       "Customer requested an order change."
                     }
                   </p>
 
-                  <p className="mt-3 text-xs text-yellow-700">
+                  <p className="mt-3 break-words text-xs text-yellow-700">
                     Edit the order using
                     the Edit Order button.
                     Saving changes resets
@@ -3564,7 +3556,7 @@ export default function AdminOrdersPage() {
                           className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4"
                         >
                           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                            <span className="font-semibold">
+                            <span className="break-words font-semibold">
                               {
                                 STATUS_LABELS[
                                   history.status
@@ -3572,7 +3564,7 @@ export default function AdminOrdersPage() {
                               }
                             </span>
 
-                            <span className="text-xs text-zinc-500">
+                            <span className="shrink-0 text-xs text-zinc-500">
                               {formatDateTime(
                                 history.changedAt
                               )}
@@ -3587,7 +3579,7 @@ export default function AdminOrdersPage() {
                           </p>
 
                           {history.note && (
-                            <p className="mt-2 text-sm text-zinc-600">
+                            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-600">
                               {
                                 history.note
                               }
@@ -3806,15 +3798,15 @@ export default function AdminOrdersPage() {
                     Requested Delivery
                   </p>
 
-                  <p className="mt-1 font-bold">
+                  <p className="mt-1 break-words font-bold">
                     {selectedCustomRecipe.preferredDeliveryDate}
                   </p>
 
-                  <p className="mt-1 text-sm text-zinc-600">
+                  <p className="mt-1 break-words text-sm text-zinc-600">
                     {selectedCustomRecipe.preferredDeliveryTime}
                   </p>
 
-                  <p className="mt-3 text-sm">
+                  <p className="mt-3 break-words text-sm">
                     <span className="font-semibold">
                       Quantity:
                     </span>{" "}
@@ -3872,7 +3864,7 @@ export default function AdminOrdersPage() {
                   Admin Decision
                 </h3>
 
-                <p className="mt-2 text-sm text-zinc-600">
+                <p className="mt-2 break-words text-sm text-zinc-600">
                   Enter the final price and optional internal note. Approve automatically creates the normal order using the same Track ID.
                 </p>
 
@@ -3898,7 +3890,7 @@ export default function AdminOrdersPage() {
                       selectedCustomRecipe.status === "APPROVED" ||
                       selectedCustomRecipe.status === "REJECTED"
                     }
-                    className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 disabled:bg-zinc-100 disabled:opacity-70"
+                    className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 disabled:bg-zinc-100 disabled:opacity-70"
                   />
                 </div>
 
@@ -3918,7 +3910,7 @@ export default function AdminOrdersPage() {
                       setCustomRecipeNote(event.target.value)
                     }
                     placeholder="Internal note about this request"
-                    className="mt-2 w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    className="mt-2 w-full min-w-0 resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                   />
                 </div>
 
@@ -3998,7 +3990,7 @@ export default function AdminOrdersPage() {
                   </>
                 )}
 
-                <p className="mt-2">
+                <p className="mt-2 break-words">
                   When approved, this request is automatically converted into a normal order using the same Track ID.
                 </p>
               </div>
@@ -4011,12 +4003,12 @@ export default function AdminOrdersPage() {
         <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-lg rounded-3xl bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 sm:items-center sm:px-6 sm:py-5">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-green-600">
                   Record Payment
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold">
+                <h2 className="mt-1 break-all text-2xl font-bold">
                   {
                     paymentOrder.orderId
                   }
@@ -4030,7 +4022,7 @@ export default function AdminOrdersPage() {
                     null
                   )
                 }
-                className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
               >
                 Close
               </button>
@@ -4083,7 +4075,7 @@ export default function AdminOrdersPage() {
                       event.target.value
                     )
                   }
-                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 />
               </div>
 
@@ -4100,7 +4092,7 @@ export default function AdminOrdersPage() {
                         .value as typeof paymentMethod
                     )
                   }
-                  className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 bg-white px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 >
                   <option value="UPI">
                     UPI
@@ -4134,7 +4126,7 @@ export default function AdminOrdersPage() {
                     )
                   }
                   placeholder="Payment reference or note"
-                  className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  className="mt-2 w-full min-w-0 resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 />
               </div>
 
@@ -4148,7 +4140,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     void addPayment()
                   }
-                  className="w-full rounded-full bg-green-600 sm:flex-1 px-5 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                  className="w-full rounded-full bg-green-600 px-5 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50 sm:flex-1"
                 >
                   {actionLoading ===
                   paymentOrder._id
@@ -4167,7 +4159,7 @@ export default function AdminOrdersPage() {
                       null
                     )
                   }
-                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold sm:w-auto text-zinc-700 hover:bg-zinc-50"
+                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto"
                 >
                   Cancel
                 </button>
@@ -4185,7 +4177,7 @@ export default function AdminOrdersPage() {
                 Delivery Verification
               </p>
 
-              <h2 className="mt-1 text-2xl font-bold">
+              <h2 className="mt-1 break-all text-2xl font-bold">
                 {otpOrder.orderId}
               </h2>
             </div>
@@ -4208,24 +4200,20 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="rounded-2xl bg-zinc-50 p-4 text-sm">
-                <div className="flex justify-between">
-                  <span>
-                    Order Total
-                  </span>
+                <div className="flex justify-between gap-4">
+                  <span>Order Total</span>
 
-                  <strong>
+                  <strong className="shrink-0">
                     {formatMoney(
                       otpOrder.grandTotal
                     )}
                   </strong>
                 </div>
 
-                <div className="mt-2 flex justify-between">
-                  <span>
-                    Paid
-                  </span>
+                <div className="mt-2 flex justify-between gap-4">
+                  <span>Paid</span>
 
-                  <strong className="text-green-700">
+                  <strong className="shrink-0 text-green-700">
                     {formatMoney(
                       getPaidAmount(
                         otpOrder
@@ -4234,12 +4222,10 @@ export default function AdminOrdersPage() {
                   </strong>
                 </div>
 
-                <div className="mt-2 flex justify-between">
-                  <span>
-                    Remaining
-                  </span>
+                <div className="mt-2 flex justify-between gap-4">
+                  <span>Remaining</span>
 
-                  <strong className="text-green-700">
+                  <strong className="shrink-0 text-green-700">
                     {formatMoney(
                       getRemainingAmount(
                         otpOrder
@@ -4274,7 +4260,7 @@ export default function AdminOrdersPage() {
                     )
                   }
                   placeholder="Enter 6-digit OTP"
-                  className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -4290,7 +4276,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     void verifyDeliveryOtp()
                   }
-                  className="w-full rounded-full bg-indigo-600 sm:flex-1 px-5 py-3 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-full bg-indigo-600 px-5 py-3 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
                 >
                   {actionLoading ===
                   otpOrder._id
@@ -4307,7 +4293,7 @@ export default function AdminOrdersPage() {
                   onClick={() =>
                     setOtpOrder(null)
                   }
-                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold sm:w-auto text-zinc-700 hover:bg-zinc-50"
+                  className="w-full rounded-full border border-zinc-200 px-5 py-3 font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto"
                 >
                   Cancel
                 </button>
@@ -4321,7 +4307,7 @@ export default function AdminOrdersPage() {
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 p-3 sm:p-8">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-3xl border-b border-zinc-100 bg-white px-4 py-4 sm:items-center sm:px-6 sm:py-5">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
                   Edit Order
                 </p>
@@ -4340,7 +4326,7 @@ export default function AdminOrdersPage() {
                     null
                   )
                 }
-                className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
               >
                 Close
               </button>
@@ -4373,7 +4359,7 @@ export default function AdminOrdersPage() {
                           event.target.value
                         )
                       }
-                      className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
 
@@ -4394,7 +4380,7 @@ export default function AdminOrdersPage() {
                           event.target.value
                         )
                       }
-                      className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
 
@@ -4415,7 +4401,7 @@ export default function AdminOrdersPage() {
                           event.target.value
                         )
                       }
-                      className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
                 </div>
@@ -4444,7 +4430,7 @@ export default function AdminOrdersPage() {
                           event.target.value
                         )
                       }
-                      className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
 
@@ -4466,7 +4452,7 @@ export default function AdminOrdersPage() {
                         )
                       }
                       placeholder="Google Maps link (optional)"
-                      className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
 
@@ -4488,7 +4474,7 @@ export default function AdminOrdersPage() {
                             event.target.value
                           )
                         }
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                       />
                     </div>
 
@@ -4510,7 +4496,7 @@ export default function AdminOrdersPage() {
                           )
                         }
                         placeholder="7:00 PM"
-                        className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                        className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                       />
                     </div>
                   </div>
@@ -4534,7 +4520,7 @@ export default function AdminOrdersPage() {
                           event.target.value
                         )
                       }
-                      className="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      className="mt-2 w-full min-w-0 resize-none rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                     />
                   </div>
                 </div>
@@ -4566,29 +4552,29 @@ export default function AdminOrdersPage() {
                         event.target.value
                       )
                     }
-                    className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    className="mt-2 w-full min-w-0 rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                   />
                 </div>
 
                 <div className="mt-4 rounded-2xl bg-zinc-50 p-4 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>
                       Current Food Total
                     </span>
 
-                    <span className="font-semibold">
+                    <span className="shrink-0 font-semibold">
                       {formatMoney(
                         editingOrder.foodTotal
                       )}
                     </span>
                   </div>
 
-                  <div className="mt-2 flex justify-between">
+                  <div className="mt-2 flex justify-between gap-4">
                     <span>
                       New Delivery Charge
                     </span>
 
-                    <span className="font-semibold">
+                    <span className="shrink-0 font-semibold">
                       {formatMoney(
                         Number(
                           editDeliveryCharge ||
@@ -4598,12 +4584,12 @@ export default function AdminOrdersPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex justify-between border-t border-zinc-200 pt-4 text-lg font-bold">
+                  <div className="mt-4 flex justify-between gap-4 border-t border-zinc-200 pt-4 text-lg font-bold">
                     <span>
                       New Grand Total
                     </span>
 
-                    <span className="text-orange-600">
+                    <span className="shrink-0 text-orange-600">
                       {formatMoney(
                         Number(
                           editingOrder.foodTotal
@@ -4636,7 +4622,7 @@ export default function AdminOrdersPage() {
                     actionLoading ===
                     editingOrder._id
                   }
-                  className="flex-1 rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full flex-1 rounded-full bg-orange-600 px-6 py-3.5 font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   {actionLoading ===
                   editingOrder._id
@@ -4655,7 +4641,7 @@ export default function AdminOrdersPage() {
                     actionLoading ===
                     editingOrder._id
                   }
-                  className="rounded-full border border-zinc-200 px-6 py-3.5 font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                  className="w-full rounded-full border border-zinc-200 px-6 py-3.5 font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:w-auto"
                 >
                   Cancel
                 </button>
