@@ -1,6 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+
+const API_URL = "http://localhost:5000/api";
+
+type BusinessSettings = {
+  phoneNumber: string;
+  whatsappNumber: string;
+  instagramUrl: string;
+};
 
 const features = [
   {
@@ -71,9 +80,91 @@ const features = [
 ];
 
 export default function Home() {
+  const [businessSettings, setBusinessSettings] =
+    useState<BusinessSettings>({
+      phoneNumber: "",
+      whatsappNumber: "",
+      instagramUrl: "",
+    });
+
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/business-settings`,
+          {
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (
+          response.ok &&
+          data.success &&
+          data.settings
+        ) {
+          setBusinessSettings({
+            phoneNumber:
+              data.settings.phoneNumber || "",
+            whatsappNumber:
+              data.settings.whatsappNumber || "",
+            instagramUrl:
+              data.settings.instagramUrl || "",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Fetch business settings error:",
+          error
+        );
+      }
+    };
+
+    void fetchBusinessSettings();
+  }, []);
+
+  // ==========================================
+  // WHATSAPP URL
+  // ==========================================
+
+  const getWhatsAppUrl = (phone: string) => {
+    const digits = String(phone || "").replace(
+      /\D/g,
+      ""
+    );
+
+    let whatsappNumber = digits;
+
+    if (digits.length === 10) {
+      whatsappNumber = `91${digits}`;
+    } else if (
+      digits.startsWith("0") &&
+      digits.length === 11
+    ) {
+      whatsappNumber = `91${digits.slice(1)}`;
+    }
+
+    return `https://wa.me/${whatsappNumber}`;
+  };
+
+  // ==========================================
+  // PHONE URL
+  // ==========================================
+
+  const getPhoneUrl = (phone: string) => {
+    return `tel:${String(phone || "").replace(
+      /\s/g,
+      ""
+    )}`;
+  };
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-zinc-900">
-      {/* HEADER */}
+      {/* ==========================================
+          HEADER
+      ========================================== */}
+
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <Link
@@ -128,10 +219,14 @@ export default function Home() {
         </div>
       </header>
 
-      {/* HERO */}
+      {/* ==========================================
+          HERO
+      ========================================== */}
+
       <section className="relative overflow-hidden bg-orange-50">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 md:gap-12 lg:grid-cols-2 lg:px-8 lg:py-24">
           {/* HERO TEXT */}
+
           <div className="min-w-0">
             <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full bg-orange-100 px-3.5 py-2 text-xs font-semibold text-orange-700 sm:px-4 sm:text-sm">
               <svg
@@ -166,6 +261,8 @@ export default function Home() {
               and get your food prepared with care.
             </p>
 
+            {/* MAIN BUTTONS */}
+
             <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:gap-4">
               <Link
                 href="/recipes"
@@ -181,9 +278,119 @@ export default function Home() {
                 Request Custom Recipe
               </Link>
             </div>
+
+            {/* ==========================================
+                BUSINESS CONTACT ICONS
+                ONLY ICONS — NO IMAGES
+            ========================================== */}
+
+            {(businessSettings.phoneNumber ||
+              businessSettings.whatsappNumber ||
+              businessSettings.instagramUrl) && (
+              <div className="mt-7 flex items-center gap-3">
+                {/* CALL */}
+
+                {businessSettings.phoneNumber && (
+                  <a
+                    href={getPhoneUrl(
+                      businessSettings.phoneNumber
+                    )}
+                    aria-label="Call Sparsha Kitchen"
+                    title="Call Sparsha Kitchen"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-100 hover:shadow-md"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    >
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </a>
+                )}
+
+                {/* WHATSAPP */}
+
+                {businessSettings.whatsappNumber && (
+                  <a
+                    href={getWhatsAppUrl(
+                      businessSettings.whatsappNumber
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="WhatsApp Sparsha Kitchen"
+                    title="WhatsApp Sparsha Kitchen"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-100 hover:shadow-md"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    >
+                      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.07 0C5.5 0 .15 5.35.15 11.92c0 2.1.55 4.15 1.6 5.96L.05 24l6.27-1.64a11.9 11.9 0 0 0 5.75 1.47h.01c6.57 0 11.92-5.35 11.92-11.92 0-3.18-1.24-6.17-3.48-8.43ZM12.08 21.85h-.01a9.9 9.9 0 0 1-5.05-1.38l-.36-.21-3.72.97.99-3.63-.23-.37a9.9 9.9 0 0 1-1.52-5.31C2.18 6.44 6.62 2 12.08 2c2.65 0 5.14 1.03 7.02 2.92a9.86 9.86 0 0 1 2.9 7c0 5.46-4.44 9.9-9.92 9.93Zm5.43-7.42c-.3-.15-1.78-.88-2.05-.98-.27-.1-.47-.15-.67.15-.2.3-.77.98-.94 1.18-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.09 4.49.71.31 1.27.5 1.71.64.72.23 1.38.2 1.9.12.58-.09 1.78-.73 2.03-1.44.25-.71.25-1.32.17-1.44-.07-.12-.27-.2-.57-.35Z" />
+                    </svg>
+                  </a>
+                )}
+
+                {/* INSTAGRAM */}
+
+                {businessSettings.instagramUrl && (
+                  <a
+                    href={
+                      businessSettings.instagramUrl
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram Sparsha Kitchen"
+                    title="Instagram Sparsha Kitchen"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-100 hover:shadow-md"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="5"
+                      />
+
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="4"
+                      />
+
+                      <circle
+                        cx="17.5"
+                        cy="6.5"
+                        r="1"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* HERO FOOD IMAGE */}
+
           <div className="relative w-full">
             <div className="mx-auto aspect-square w-full max-w-[360px] overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-orange-100 sm:max-w-lg sm:rounded-[3rem]">
               <img
@@ -196,7 +403,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FEATURES */}
+      {/* ==========================================
+          FEATURES
+      ========================================== */}
+
       <section className="bg-white px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-2xl text-center">
@@ -242,7 +452,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CUSTOM RECIPE CTA */}
+      {/* ==========================================
+          CUSTOM RECIPE CTA
+      ========================================== */}
+
       <section className="px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="overflow-hidden rounded-3xl bg-orange-600 px-6 py-9 text-white sm:rounded-[2rem] sm:px-12 sm:py-12 lg:flex lg:items-center lg:justify-between">
@@ -272,7 +485,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TRACK ORDER */}
+      {/* ==========================================
+          TRACK ORDER
+      ========================================== */}
+
       <section className="bg-zinc-50 px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600 sm:h-14 sm:w-14 sm:rounded-2xl">
@@ -290,6 +506,7 @@ export default function Home() {
                 height="14"
                 rx="2"
               />
+
               <path d="M3 9h18" />
               <path d="M7 14h4" />
               <path d="M15 14h2" />
@@ -314,7 +531,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* ==========================================
+          FOOTER
+      ========================================== */}
+
       <footer className="border-t border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-7 sm:px-6 sm:py-8 md:flex-row md:items-center md:justify-between lg:px-8">
           <div>

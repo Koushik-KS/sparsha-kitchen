@@ -17,6 +17,7 @@ const recipeRoutes = require("./routes/recipeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const deliveryPersonRoutes = require("./routes/deliveryPersonRoutes");
 const customRecipeRoutes = require("./routes/customRecipeRoutes");
+const businessSettingsRoutes = require("./routes/businessSettingsRoutes");
 
 // IMPORTANT: authMiddleware exports the function directly
 const protectAdmin = require("./middleware/authMiddleware");
@@ -148,6 +149,12 @@ app.use(
 app.use(
   "/api/custom-recipes",
   customRecipeRoutes
+);
+
+// Business contact settings
+app.use(
+  "/api/business-settings",
+  businessSettingsRoutes
 );
 
 // ==========================================

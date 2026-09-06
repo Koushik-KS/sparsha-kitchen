@@ -49,9 +49,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const [editingId, setEditingId] = useState<string | null>(
-    null
-  );
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -85,19 +83,15 @@ export default function AdminPage() {
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/admin/recipes`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        }
-      );
+      const response = await fetch(`${API_URL}/admin/recipes`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
 
-      const data: RecipeResponse =
-        await response.json();
+      const data: RecipeResponse = await response.json();
 
       if (response.status === 401) {
         logout();
@@ -112,10 +106,7 @@ export default function AdminPage() {
 
       setRecipes(data.recipes || []);
     } catch (err) {
-      console.error(
-        "Fetch admin recipes error:",
-        err
-      );
+      console.error("Fetch admin recipes error:", err);
 
       setError(
         err instanceof Error
@@ -199,8 +190,7 @@ export default function AdminPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message ||
-            "Unable to upload image."
+          data.message || "Unable to upload image."
         );
       }
 
@@ -216,19 +206,17 @@ export default function AdminPage() {
           .map((photo) => photo.trim())
           .filter(Boolean);
 
-        return [...existingPhotos, data.imageUrl!].join(
-          "\n"
-        );
+        return [
+          ...existingPhotos,
+          data.imageUrl!,
+        ].join("\n");
       });
 
       setMessage(
         "Photo uploaded successfully. URL added automatically."
       );
     } catch (err) {
-      console.error(
-        "Upload image error:",
-        err
-      );
+      console.error("Upload image error:", err);
 
       setError(
         err instanceof Error
@@ -242,6 +230,10 @@ export default function AdminPage() {
       event.target.value = "";
     }
   };
+
+  // ==========================================
+  // CREATE / UPDATE RECIPE
+  // ==========================================
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
@@ -345,10 +337,7 @@ export default function AdminPage() {
 
       await fetchRecipes();
     } catch (err) {
-      console.error(
-        "Save recipe error:",
-        err
-      );
+      console.error("Save recipe error:", err);
 
       setError(
         err instanceof Error
@@ -359,6 +348,10 @@ export default function AdminPage() {
       setSaving(false);
     }
   };
+
+  // ==========================================
+  // EDIT RECIPE
+  // ==========================================
 
   const handleEdit = (recipe: Recipe) => {
     setError("");
@@ -380,6 +373,10 @@ export default function AdminPage() {
       behavior: "smooth",
     });
   };
+
+  // ==========================================
+  // DELETE RECIPE
+  // ==========================================
 
   const handleDelete = async (
     recipe: Recipe
@@ -451,6 +448,10 @@ export default function AdminPage() {
       );
     }
   };
+
+  // ==========================================
+  // UPDATE RECIPE STATUS
+  // ==========================================
 
   const updateRecipeStatus = async (
     recipe: Recipe,
@@ -535,8 +536,9 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-orange-50 text-zinc-900">
+      {/* HEADER */}
       <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-5 lg:px-8">
           <div>
             <div className="text-2xl font-bold tracking-tight text-orange-600">
               Sparsha Kitchen
@@ -547,7 +549,8 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* RECIPES */}
             <button
               type="button"
               onClick={() =>
@@ -558,6 +561,7 @@ export default function AdminPage() {
               Recipes
             </button>
 
+            {/* ORDERS */}
             <button
               type="button"
               onClick={() =>
@@ -568,6 +572,7 @@ export default function AdminPage() {
               Orders
             </button>
 
+            {/* DELIVERY TEAM */}
             <button
               type="button"
               onClick={() =>
@@ -580,6 +585,20 @@ export default function AdminPage() {
               Delivery Team
             </button>
 
+            {/* BUSINESS SETTINGS */}
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  "/admin/business-settings"
+                )
+              }
+              className="rounded-full border border-orange-200 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+            >
+              Business Settings
+            </button>
+
+            {/* LOGOUT */}
             <button
               type="button"
               onClick={logout}
@@ -591,6 +610,7 @@ export default function AdminPage() {
         </div>
       </header>
 
+      {/* DASHBOARD */}
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div>
           <p className="font-semibold uppercase tracking-wide text-orange-600">
@@ -608,12 +628,14 @@ export default function AdminPage() {
           </p>
         </div>
 
+        {/* ERROR */}
         {error && (
           <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
 
+        {/* SUCCESS MESSAGE */}
         {message && (
           <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
             {message}
@@ -621,6 +643,7 @@ export default function AdminPage() {
         )}
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[420px_1fr]">
+          {/* ADD / EDIT RECIPE */}
           <div className="h-fit rounded-3xl border border-orange-100 bg-white p-7 shadow-sm">
             <div>
               <p className="font-semibold uppercase tracking-wide text-orange-600">
@@ -640,6 +663,7 @@ export default function AdminPage() {
               onSubmit={handleSubmit}
               className="mt-7 space-y-5"
             >
+              {/* RECIPE NAME */}
               <div>
                 <label
                   htmlFor="name"
@@ -662,6 +686,7 @@ export default function AdminPage() {
                 />
               </div>
 
+              {/* DESCRIPTION */}
               <div>
                 <label
                   htmlFor="description"
@@ -684,7 +709,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* PHOTO URLS + SMALL CAMERA ICON */}
+              {/* PHOTO URLS + CAMERA ICON */}
               <div>
                 <div className="flex items-center justify-between">
                   <label
@@ -710,7 +735,9 @@ export default function AdminPage() {
                       onClick={() =>
                         fileInputRef.current?.click()
                       }
-                      disabled={uploadingImage}
+                      disabled={
+                        uploadingImage
+                      }
                       title="Upload photo"
                       aria-label="Upload photo"
                       className="flex h-9 w-9 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-lg transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -741,6 +768,7 @@ export default function AdminPage() {
                 </p>
               </div>
 
+              {/* PRICE + UNIT */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <div>
                   <label
@@ -789,6 +817,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* STATUS */}
               <div className="space-y-3 border-t border-zinc-100 pt-5">
                 <label className="flex cursor-pointer items-center gap-3">
                   <input
@@ -825,6 +854,7 @@ export default function AdminPage() {
                 </label>
               </div>
 
+              {/* SAVE BUTTON */}
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="submit"
@@ -857,6 +887,7 @@ export default function AdminPage() {
             </form>
           </div>
 
+          {/* RECIPES */}
           <div>
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -949,9 +980,7 @@ export default function AdminPage() {
 
                           {recipe.description && (
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-                              {
-                                recipe.description
-                              }
+                              {recipe.description}
                             </p>
                           )}
 
