@@ -10,6 +10,15 @@ https://sparsha-kitchen.vercel.app
 Admin Login:
 https://sparsha-kitchen.vercel.app/admin/login
 
+Admin login
+
+Admin website
+Admin Email:koushikshetty102@gmail.com
+
+Admin Password:koushik123
+
+**Note: ** These admin credentials are provided for demonstration purposes only. Please do not misuse or share them.**
+
 
 ## Features
 
